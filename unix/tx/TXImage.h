@@ -34,6 +34,7 @@
 #define __TXIMAGE_H__
 
 #include <X11/Xlib.h>
+#include <stdlib.h>
 #include <rfb/PixelBuffer.h>
 #include <rfb/ColourMap.h>
 #include <rfb/ColourCube.h>
