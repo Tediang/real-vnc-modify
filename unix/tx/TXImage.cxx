@@ -140,10 +140,14 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
     tig->getImage(ximDataStart, r,
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
   }
+  // scale xim to xim_scaled
+  int w_scaled, h_scaled;
+  scaleXImage(win, gc, x, y, x, y, w, h, &w_scaled, &h_scaled);
+
   if (usingShm()) {
-    XShmPutImage(dpy, win, gc, xim, x, y, x, y, w, h, False);
+    XShmPutImage(dpy, win, gc, xim_scaled, x, y, x, y, w_scaled, h_scaled, False);
   } else {
-    XPutImage(dpy, win, gc, xim, x, y, x, y, w, h);
+    XPutImage(dpy, win, gc, xim_scaled, x, y, x, y, w_scaled, h_scaled);
   }
 }
 
@@ -337,4 +341,84 @@ void TXImage::getNativePixelFormat(Visual* vis, int depth)
       }
     }
   }
+}
+// scale xim to xim_scaled
+void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src, int *w_dst, int *h_dst)
+{
+  XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
+  Pixmap src_pixmap = XCreatePixmap(dpy,
+                                    win,
+                                    width_,
+                                    height_,
+                                    format->depth);
+
+  XPutImage(dpy, src_pixmap, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+
+
+  Picture src = XRenderCreatePicture(dpy,
+                                     src_pixmap,
+                                     format,
+                                     0,
+                                     NULL);
+// scale src
+  double w_rate = (double)w_scaled/width_;
+  double h_rate = (double)h_scaled/height_;
+
+  *w_dst = (int)w_rate * w_src;
+  *h_dst = (int)h_rate * h_src;
+
+  //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
+
+
+  XTransform xform = { {
+                               { XDoubleToFixed(w_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
+                               { XDoubleToFixed(0), XDoubleToFixed(h_rate), XDoubleToFixed(0) },
+                               { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
+                       }
+  };
+  XRenderSetPictureTransform(dpy, src, &xform);
+//    // Apply filter to smooth out the image.
+//    XRenderSetPictureFilter(d, src, FilterBest, NULL, 0);
+//
+// create dst
+
+  Pixmap dst_pixmap = XCreatePixmap(dpy,
+                                    win,
+                                    w_scaled,
+                                    h_scaled,
+                                    format->depth);
+
+  Picture dst = XRenderCreatePicture(dpy, dst_pixmap, format, 0, NULL);
+  XRenderColor transparent = { 0 };
+  XRenderFillRectangle(dpy,
+                       PictOpSrc,
+                       dst,
+                       &transparent,
+                       0,
+                       0,
+                       w_scaled,
+                       h_scaled);
+// src --> dst
+  XRenderComposite(dpy,
+                   PictOpSrc,
+                   src,
+                   None,
+                   dst,
+                   x_src,
+                   y_src,
+                   0,
+                   0,
+                   x_dst,
+                   y_dst,
+                   *w_dst,
+                   *h_dst);
+
+
+  xim_scaled = XGetImage(dpy,
+                            dst_pixmap,
+                            0,
+                            0,
+                            w_scaled,
+                            h_scaled,
+                            AllPlanes, ZPixmap);
 }

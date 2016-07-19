@@ -34,6 +34,7 @@
 #define __TXIMAGE_H__
 
 #include <X11/Xlib.h>
+#include <X11/extensions/Xrender.h>
 #include <stdlib.h>
 #include <rfb/PixelBuffer.h>
 #include <rfb/ColourMap.h>
@@ -66,6 +67,8 @@ public:
   // width(), height(), getPF() etc are inherited from PixelBuffer
   virtual void setPF(const rfb::PixelFormat& pf);
   virtual int getStride() const;
+    int w_scaled = 800;
+    int h_scaled = 600;
 
 private:
 
@@ -75,8 +78,9 @@ private:
   void createXImage();
   void destroyXImage();
   void getNativePixelFormat(Visual* vis, int depth);
+    void scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src, int *w_dst, int *h_dst)
 
-  XImage* xim;
+  XImage* xim, *xim_scaled;
   Display* dpy;
   Visual* vis;
   int depth;
