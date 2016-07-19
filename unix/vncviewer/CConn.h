@@ -86,6 +86,8 @@ public:
   void setCursor(int width, int height, const rfb::Point& hotspot,
                  void* data, void* mask);
 
+    int w_scaled = 800;
+    int h_scaled = 600;
 private:
 
   void recreateViewport();

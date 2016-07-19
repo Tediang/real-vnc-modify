@@ -92,6 +92,9 @@ public:
                                int nitems, void* data);
   virtual void handleEvent(TXWindow* w, XEvent* ev);
 
+    int w_scaled = 800;
+    int h_scaled = 600;
+
 private:
 
   void createXCursors();

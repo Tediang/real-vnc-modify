@@ -65,7 +65,7 @@ static rfb::LogWriter vlog("DesktopWindow");
 DesktopWindow::DesktopWindow(Display* dpy, int w, int h,
                              const rfb::PixelFormat& serverPF,
                              CConn* cc_, TXWindow* parent)
-  : TXWindow(dpy, w, h, parent), cc(cc_), im(0),
+  : TXWindow(dpy, w_scaled, h_scaled, parent), cc(cc_), im(0),
     cursorVisible(false), cursorAvailable(false), currentSelectionTime(0),
     newSelection(0), gettingInitialSelectionTime(true),
     newServerCutText(false), serverCutText_(0),

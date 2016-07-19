@@ -556,7 +556,7 @@ void CConn::getOptions() {
 void CConn::recreateViewport()
 {
   TXViewport* oldViewport = viewport;
-  viewport = new TXViewport(dpy, cp.width, cp.height);
+  viewport = new TXViewport(dpy, w_scaled, h_scaled);
   desktop->setViewport(viewport);
   CharArray windowNameStr(windowName.getData());
   if (!windowNameStr.buf[0]) {
