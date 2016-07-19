@@ -239,7 +239,9 @@ CSecurity* CConn::getCSecurity(int secType) {
 void CConn::serverInit() {
   CConnection::serverInit();
   serverPF = cp.pf();
+  fprintf(stderr, "TED__CCon::serverInit --> new DesktopWindow of(%d, %d)\n", cp.width, cp.height);
   desktop = new DesktopWindow(dpy, cp.width, cp.height, serverPF, this);
+
   desktopEventHandler = desktop->setEventHandler(this);
   desktop->addEventMask(KeyPressMask | KeyReleaseMask);
   fullColourPF = desktop->getPF();
@@ -556,7 +558,9 @@ void CConn::getOptions() {
 void CConn::recreateViewport()
 {
   TXViewport* oldViewport = viewport;
+  fprintf(stderr, "TED__CCon::recreateViewport --> new viewport of(%d, %d)\n", w_scaled, h_scaled);
   viewport = new TXViewport(dpy, w_scaled, h_scaled);
+
   desktop->setViewport(viewport);
   CharArray windowNameStr(windowName.getData());
   if (!windowNameStr.buf[0]) {
@@ -588,6 +592,8 @@ void CConn::reconfigureViewport()
 {
   viewport->setMaxSize(cp.width, cp.height);
   if (fullScreen) {
+    fprintf(stderr, "TED__CCon::reconfigureViewport --> DisplayWidth(dpy,DefaultScreen(dpy) of(%d, %d)\n",
+            DisplayWidth(dpy,DefaultScreen(dpy)), DisplayHeight(dpy,DefaultScreen(dpy)));
     viewport->resize(DisplayWidth(dpy,DefaultScreen(dpy)),
                      DisplayHeight(dpy,DefaultScreen(dpy)));
   } else {

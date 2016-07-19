@@ -240,6 +240,7 @@ TXWindow::TXWindow(Display* dpy_, int w, int h, TXWindow* parent_,
   : dpy(dpy_), xPad(3), yPad(3), bevel(2), parent(parent_), width_(w),
     height_(h), eventHandler(0), dwc(0), eventMask(0), toplevel_(false)
 {
+  fprintf(stderr, "TED__TXWindow::TXWindow --> w, h of(%d, %d)\n", w, h);
   sizeHints.flags = 0;
   XSetWindowAttributes attr;
   attr.background_pixel = defaultBg;
@@ -248,6 +249,7 @@ TXWindow::TXWindow(Display* dpy_, int w, int h, TXWindow* parent_,
   win_ = XCreateWindow(dpy, par, 0, 0, width_, height_, borderWidth,
                       CopyFromParent, CopyFromParent, CopyFromParent,
                       CWBackPixel | CWBorderPixel, &attr);
+  fprintf(stderr, "TED__TXWindow::TXWindow --> XCreateWindow of(%d, %d)\n", width_, height_);
   if (parent) map();
 
   windows.push_back(this);
@@ -311,6 +313,7 @@ void TXWindow::setGeometry(const char* geom, int x, int y, int w, int h)
               0, &sizeHints, &x, &y, &w, &h, &sizeHints.win_gravity);
   sizeHints.flags |= PWinGravity;
   setUSPosition(x, y);
+  fprintf(stderr, "TED__TXWindow::setGeometry --> resize(%d, %d)\n", w,h);
   resize(w, h);
 }
 

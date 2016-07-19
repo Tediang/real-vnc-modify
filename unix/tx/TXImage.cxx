@@ -144,10 +144,14 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   int w_scaled, h_scaled;
   scaleXImage(win, gc, x, y, x, y, w, h, &w_scaled, &h_scaled);
 
+  fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
+
   if (usingShm()) {
     XShmPutImage(dpy, win, gc, xim_scaled, x, y, x, y, w_scaled, h_scaled, False);
   } else {
     XPutImage(dpy, win, gc, xim_scaled, x, y, x, y, w_scaled, h_scaled);
+    if (xim_scaled) XDestroyImage(xim_scaled);
+    xim_scaled = 0;
   }
 }
 
@@ -364,8 +368,13 @@ void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, in
   double w_rate = (double)w_scaled/width_;
   double h_rate = (double)h_scaled/height_;
 
-  *w_dst = (int)w_rate * w_src;
-  *h_dst = (int)h_rate * h_src;
+
+
+  *w_dst = (int)(w_rate * w_src);
+  *h_dst = (int)(h_rate * h_src);
+
+  fprintf(stderr, "TED__TXImage::scaleXImage --> scaled(%d, %d) --- xim(%d, %d) --- R.dst(%d, %d)\n",
+          w_scaled, h_scaled, width_, height_, *w_dst, *h_dst);
 
   //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
 
@@ -421,4 +430,8 @@ void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, in
                             w_scaled,
                             h_scaled,
                             AllPlanes, ZPixmap);
+  XFreePixmap(dpy, src_pixmap);
+  XFreePixmap(dpy, dst_pixmap);
+  XRenderFreePicture(dpy, src);
+  XRenderFreePicture(dpy, dst);
 }

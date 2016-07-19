@@ -92,8 +92,8 @@ public:
                                int nitems, void* data);
   virtual void handleEvent(TXWindow* w, XEvent* ev);
 
-    int w_scaled = 800;
-    int h_scaled = 600;
+    const static int w_scaled = 1024;
+    const static int h_scaled = 768;
 
 private:
 

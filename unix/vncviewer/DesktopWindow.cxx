@@ -80,7 +80,8 @@ DesktopWindow::DesktopWindow(Display* dpy, int w, int h,
                EnterWindowMask | LeaveWindowMask);
   createXCursors();
   XDefineCursor(dpy, win(), dotCursor);
-  im = new TXImage(dpy, width(), height());
+  fprintf(stderr, "TED__DesktopWindow::DesktopWindow --> new TXImage of(%d, %d)\n", w, h);
+  im = new TXImage(dpy, w, h);
   if (!serverPF.trueColour)
     im->setPF(serverPF);
   XConvertSelection(dpy, sendPrimary ? XA_PRIMARY : xaCLIPBOARD, xaTIMESTAMP,

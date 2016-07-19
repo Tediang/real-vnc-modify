@@ -67,8 +67,8 @@ public:
   // width(), height(), getPF() etc are inherited from PixelBuffer
   virtual void setPF(const rfb::PixelFormat& pf);
   virtual int getStride() const;
-    int w_scaled = 800;
-    int h_scaled = 600;
+    const static int w_scaled = 1024;
+    const static int h_scaled = 768;
 
 private:
 
@@ -78,7 +78,7 @@ private:
   void createXImage();
   void destroyXImage();
   void getNativePixelFormat(Visual* vis, int depth);
-    void scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src, int *w_dst, int *h_dst)
+    void scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src, int *w_dst, int *h_dst);
 
   XImage* xim, *xim_scaled;
   Display* dpy;
