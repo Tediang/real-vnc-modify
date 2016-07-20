@@ -13,7 +13,7 @@ DEP_LIBS = $(TOP)/tx/libtx.a \
            $(COMMON)/network/libnetwork.a \
            $(COMMON)/rdr/librdr.a
 
-EXTRA_LIBS = $(COMMON)/zlib/libz.a   -lXext -lX11 -lXrender
+EXTRA_LIBS = $(COMMON)/zlib/libz.a   -lXext -lX11 -lXrender -lcairo
 
 DIR_CPPFLAGS = -I$(COMMON) -I$(TOP) -I$(TOP)/tx  # X_CFLAGS are really CPPFLAGS
 

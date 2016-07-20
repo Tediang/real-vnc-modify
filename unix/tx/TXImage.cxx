@@ -33,7 +33,8 @@
 #include <rfb/LogWriter.h>
 #include "TXWindow.h"
 #include "TXImage.h"
-
+#include <cairo.h>
+#include <cairo-xlib.h>
 using namespace rfb;
 
 static rfb::LogWriter vlog("TXImage");
@@ -143,20 +144,20 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
   }
   // scale xim to xim_scaled
-  int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled;
-  scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &w_scaled, &h_scaled);
-
+//  int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled;
+//  scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &w_scaled, &h_scaled);
+  scaleXImageCairo(win, gc, x, y, x, y, w, h);
   //fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
 
-  if (usingShm()) {
-    XShmPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled, False);
-  } else {
-    fprintf(stderr, "TED__TXImage::put --> XPutImage(%d, %d, %d, %d: %d, %d)\n",
-            x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
-    XPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
-    if (xim_scaled) XDestroyImage(xim_scaled);
-    xim_scaled = 0;
-  }
+//  if (usingShm()) {
+//    XShmPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled, False);
+//  } else {
+//    fprintf(stderr, "TED__TXImage::put --> XPutImage(%d, %d, %d, %d: %d, %d)\n",
+//            x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
+//    XPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
+//    if (xim_scaled) XDestroyImage(xim_scaled);
+//    xim_scaled = 0;
+//  }
 }
 
 void TXImage::setColourMapEntries(int firstColour, int nColours, rdr::U16* rgbs)
@@ -445,4 +446,27 @@ void TXImage::scaleXImage(Window win, GC gc,
   XFreePixmap(dpy, dst_pixmap);
   XRenderFreePicture(dpy, src);
   XRenderFreePicture(dpy, dst);
+}
+
+void TXImage::scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src)
+{
+  XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
+  Pixmap src_pixmap = XCreatePixmap(dpy,
+                                    win,
+                                    width_,
+                                    height_,
+                                    format->depth);
+
+  XPutImage(dpy, src_pixmap, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+  cairo_surface_t *sfc_src = cairo_xlib_surface_create(dpy, src_pixmap, vis, width_, height_);
+  cairo_surface_t *sfc_dst = cairo_xlib_surface_create(dpy, win, vis, w_scaled, h_scaled);
+  cairo_t *ct = cairo_create(sfc_dst);
+  cairo_scale(ct, (double)w_scaled/width_, (double)h_scaled/height_);
+  cairo_set_source_surface(ct, sfc_src, 0, 0);
+  cairo_paint(ct);
+
+  XFreePixmap(dpy, src_pixmap);
+  cairo_surface_destroy(sfc_src);
+  cairo_surface_destroy(sfc_dst);
+  cairo_destroy(ct);
 }
