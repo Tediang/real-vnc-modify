@@ -255,11 +255,13 @@ void CConn::serverInit() {
 // setDesktopSize() is called when the desktop size changes (including when
 // it is set initially).
 void CConn::setDesktopSize(int w, int h) {
-  w = w_scaled;
-  h = h_scaled;
-  fprintf(stderr, "TED__CCon::setDesktopSize --> set fixed size --- desktop->resize of(%d, %d)\n", w, h);
+  fprintf(stderr, "TED__CCon::setDesktopSize --> CConnection::setDesktopSize(%d, %d)\n", w, h);
   CConnection::setDesktopSize(w,h);
+
   if (desktop) {
+//    w = w_scaled;
+//    h = h_scaled;
+//    fprintf(stderr, "TED__CCon::setDesktopSize --> set fixed size --- desktop->resize of(%d, %d)\n", w, h);
     desktop->resize(w, h);
     recreateViewport();
   }

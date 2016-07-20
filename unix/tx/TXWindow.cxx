@@ -355,7 +355,7 @@ void TXWindow::unmap()
 void TXWindow::resize(int w, int h)
 {
   //if (w == width_ && h == height_) return;
-  fprintf(stderr, "TED__ TXViewport::resize --> XResizeWindow of(%d, %d)\n", w, h);
+  fprintf(stderr, "TED__TXWindow::resize --> XResizeWindow of(%d, %d)\n", w, h);
   XResizeWindow(dpy, win(), w, h);
   width_ = w;
   height_ = h;

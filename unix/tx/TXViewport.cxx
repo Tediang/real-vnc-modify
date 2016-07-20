@@ -27,7 +27,7 @@ TXViewport::TXViewport(Display* dpy_, int w, int h, TXWindow* parent_)
     vScrollbar(0), scrollbarSize(15), xOff(0), yOff(0), bumpScrollTimer(this),
     bumpScroll(false), needScrollbars(false), bumpScrollX(0), bumpScrollY(0)
 {
-  fprintf(stderr, "TED__ TXViewport::TXViewport --> clipper = new TXWindow of(%d, %d)\n", width(), height());
+  fprintf(stderr, "TED__TXViewport::TXViewport --> clipper = new TXWindow of(%d, %d)\n", width(), height());
   clipper = new TXWindow(dpy, width(), height(),
                          this);
   clipper->setBg(black);
@@ -121,7 +121,7 @@ void TXViewport::resizeNotify()
   needScrollbars = (!bumpScroll &&
                     (width() < child->width() || height() < child->height()) &&
                     (width() > scrollbarSize && height() > scrollbarSize));
-  fprintf(stderr, "TED__ TXViewport::resizeNotify --> set bars --- parent(%d, %d) --- child(%d, %d) --- bumpScroll(%d) --- needScrollbars(%d)\n",
+  fprintf(stderr, "TED__TXViewport::resizeNotify --> set bars --- parent(%d, %d) --- child(%d, %d) --- bumpScroll(%d) --- needScrollbars(%d)\n",
           width(), height(), child->width(), child->height(), bumpScroll, needScrollbars);
 
 //  if (needScrollbars) {

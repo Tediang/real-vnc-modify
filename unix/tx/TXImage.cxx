@@ -68,6 +68,7 @@ TXImage::~TXImage()
 
 void TXImage::resize(int w, int h)
 {
+  fprintf(stderr, "TED__TXImage::resize --> input(%d, %d)\n", w, h);
   if (w == width() && h == height()) return;
 
   int oldStrideBytes = getStride() * (format.bpp/8);
@@ -373,8 +374,8 @@ void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, in
   *w_dst = (int)(w_rate * w_src);
   *h_dst = (int)(h_rate * h_src);
 
-//  fprintf(stderr, "TED__TXImage::scaleXImage --> scaled(%d, %d) --- xim(%d, %d) --- R.dst(%d, %d)\n",
-//          w_scaled, h_scaled, width_, height_, *w_dst, *h_dst);
+  fprintf(stderr, "TED__TXImage::scaleXImage --> xim_scaled(%d, %d) --- xim(%d, %d) --- R.src(%d, %d: %d, %d) --- R.dst(%d, %d)\n",
+          w_scaled, h_scaled, width_, height_, x_src, y_src, w_src, h_src, *w_dst, *h_dst);
 
   //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
 

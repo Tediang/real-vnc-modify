@@ -30,6 +30,7 @@ CMsgHandler::~CMsgHandler()
 
 void CMsgHandler::setDesktopSize(int width, int height)
 {
+  fprintf(stderr, "TED__CMsgHandler::setDesktopSize --> set cp(%d, %d)\n", width, height);
   cp.width = width;
   cp.height = height;
 }
