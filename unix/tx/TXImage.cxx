@@ -381,8 +381,8 @@ void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, in
 
 
   XTransform xform = { {
-                               { XDoubleToFixed(w_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
-                               { XDoubleToFixed(0), XDoubleToFixed(h_rate), XDoubleToFixed(0) },
+                               { XDoubleToFixed(1/w_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
+                               { XDoubleToFixed(0), XDoubleToFixed(1/h_rate), XDoubleToFixed(0) },
                                { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
                        }
   };
