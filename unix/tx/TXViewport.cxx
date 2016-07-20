@@ -31,10 +31,10 @@ TXViewport::TXViewport(Display* dpy_, int w, int h, TXWindow* parent_)
   clipper = new TXWindow(dpy, width(), height(),
                          this);
   clipper->setBg(black);
-  hScrollbar = new TXScrollbar(dpy, width()-scrollbarSize, scrollbarSize,
-                               false, this, this);
-  vScrollbar = new TXScrollbar(dpy, scrollbarSize, height()-scrollbarSize,
-                               true, this, this);
+//  hScrollbar = new TXScrollbar(dpy, width()-scrollbarSize, scrollbarSize,
+//                               false, this, this);
+//  vScrollbar = new TXScrollbar(dpy, scrollbarSize, height()-scrollbarSize,
+//                               true, this, this);
 }
 
 TXViewport::~TXViewport()
@@ -148,6 +148,7 @@ void TXViewport::resizeNotify()
 
 void TXViewport::scrollbarPos(int x, int y, TXScrollbar* sb)
 {
+
   if (sb == hScrollbar) {
     x = -x;
     y = yOff;
