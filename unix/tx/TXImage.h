@@ -78,7 +78,8 @@ private:
   void createXImage();
   void destroyXImage();
   void getNativePixelFormat(Visual* vis, int depth);
-    void scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src, int *w_dst, int *h_dst);
+    void scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src,
+                     int *x_scaled_src, int *y_scaled_src, int *x_scaled_dst, int *y_scaled_dst, int *w_dst, int *h_dst);
 
   XImage* xim, *xim_scaled;
   Display* dpy;

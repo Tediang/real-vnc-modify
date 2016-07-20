@@ -239,7 +239,7 @@ CSecurity* CConn::getCSecurity(int secType) {
 void CConn::serverInit() {
   CConnection::serverInit();
   serverPF = cp.pf();
-  fprintf(stderr, "TED__CCon::serverInit --> new DesktopWindow of(%d, %d)\n", cp.width, cp.height);
+  fprintf(stderr, "TED__CCon::serverInit --> new DesktopWindow for TXImage(%d, %d)\n", cp.width, cp.height);
   desktop = new DesktopWindow(dpy, cp.width, cp.height, serverPF, this);
 
   desktopEventHandler = desktop->setEventHandler(this);

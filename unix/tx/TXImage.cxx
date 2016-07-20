@@ -135,6 +135,7 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   int y = r.tl.y;
   int w = r.width();
   int h = r.height();
+  fprintf(stderr, "TED__TXImage::put --> rect(%d, %d, %d, %d)\n", x, y, w, h);
   if (data != (rdr::U8*)xim->data) {
     rdr::U8* ximDataStart = ((rdr::U8*)xim->data + y * xim->bytes_per_line
                              + x * (xim->bits_per_pixel / 8));
@@ -142,15 +143,15 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
   }
   // scale xim to xim_scaled
-  int w_scaled, h_scaled;
-  scaleXImage(win, gc, x, y, x, y, w, h, &w_scaled, &h_scaled);
+  int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled;
+  scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &w_scaled, &h_scaled);
 
   //fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
 
   if (usingShm()) {
-    XShmPutImage(dpy, win, gc, xim_scaled, x, y, x, y, w_scaled, h_scaled, False);
+    XShmPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled, False);
   } else {
-    XPutImage(dpy, win, gc, xim_scaled, x, y, x, y, w_scaled, h_scaled);
+    XPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
     if (xim_scaled) XDestroyImage(xim_scaled);
     xim_scaled = 0;
   }
@@ -348,7 +349,9 @@ void TXImage::getNativePixelFormat(Visual* vis, int depth)
   }
 }
 // scale xim to xim_scaled
-void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src, int *w_dst, int *h_dst)
+void TXImage::scaleXImage(Window win, GC gc,
+                          int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src,
+                          int *x_scaled_src, int *y_scaled_src, int *x_scaled_dst, int *y_scaled_dst, int *w_dst, int *h_dst)
 {
   XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
   Pixmap src_pixmap = XCreatePixmap(dpy,
@@ -369,13 +372,15 @@ void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, in
   double w_rate = (double)w_scaled/width_;
   double h_rate = (double)h_scaled/height_;
 
-
-
+  *x_scaled_src = (int)(w_rate * x_src);
+  *y_scaled_src = (int)(h_rate * y_src);
+  *x_scaled_dst = (int)(w_rate * x_dst);
+  *y_scaled_dst = (int)(h_rate * y_dst);
   *w_dst = (int)(w_rate * w_src);
   *h_dst = (int)(h_rate * h_src);
 
-  fprintf(stderr, "TED__TXImage::scaleXImage --> xim_scaled(%d, %d) --- xim(%d, %d) --- R.src(%d, %d: %d, %d) --- R.dst(%d, %d)\n",
-          w_scaled, h_scaled, width_, height_, x_src, y_src, w_src, h_src, *w_dst, *h_dst);
+  fprintf(stderr, "TED__TXImage::scaleXImage --> xim(%d, %d) --- xim_scaled(%d, %d) --- R.src(%d, %d: %d, %d) --- R.dst(%d, %d)\n",
+          width_, height_, w_scaled, h_scaled, x_src, y_src, w_src, h_src, *w_dst, *h_dst);
 
   //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
 
@@ -414,12 +419,12 @@ void TXImage::scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, in
                    src,
                    None,
                    dst,
-                   x_src,
-                   y_src,
+                   *x_scaled_src,
+                   *y_scaled_src,
                    0,
                    0,
-                   x_dst,
-                   y_dst,
+                   *x_scaled_dst,
+                   *y_scaled_dst,
                    *w_dst,
                    *h_dst);
 
