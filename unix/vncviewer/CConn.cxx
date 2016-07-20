@@ -597,18 +597,18 @@ void CConn::reconfigureViewport()
     viewport->resize(DisplayWidth(dpy,DefaultScreen(dpy)),
                      DisplayHeight(dpy,DefaultScreen(dpy)));
   } else {
-    int w = cp.width;
-    int h = cp.height;
-    if (w + wmDecorationWidth >= DisplayWidth(dpy,DefaultScreen(dpy)))
-      w = DisplayWidth(dpy,DefaultScreen(dpy)) - wmDecorationWidth;
-    if (h + wmDecorationHeight >= DisplayHeight(dpy,DefaultScreen(dpy)))
-      h = DisplayHeight(dpy,DefaultScreen(dpy)) - wmDecorationHeight;
-
-    int x = (DisplayWidth(dpy,DefaultScreen(dpy)) - w - wmDecorationWidth) / 2;
-    int y = (DisplayHeight(dpy,DefaultScreen(dpy)) - h - wmDecorationHeight)/2;
+//    int w = cp.width;
+//    int h = cp.height;
+//    if (w + wmDecorationWidth >= DisplayWidth(dpy,DefaultScreen(dpy)))
+//      w = DisplayWidth(dpy,DefaultScreen(dpy)) - wmDecorationWidth;
+//    if (h + wmDecorationHeight >= DisplayHeight(dpy,DefaultScreen(dpy)))
+//      h = DisplayHeight(dpy,DefaultScreen(dpy)) - wmDecorationHeight;
+//
+//    int x = (DisplayWidth(dpy,DefaultScreen(dpy)) - w - wmDecorationWidth) / 2;
+//    int y = (DisplayHeight(dpy,DefaultScreen(dpy)) - h - wmDecorationHeight)/2;
 
     CharArray geometryStr(geometry.getData());
-    viewport->setGeometry(geometryStr.buf, x, y, w, h);
+    viewport->setGeometry(geometryStr.buf, 0, 0, w_scaled, h_scaled);
   }
 }
 
