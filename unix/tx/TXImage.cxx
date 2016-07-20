@@ -41,7 +41,7 @@ using namespace rfb;
 static rfb::LogWriter vlog("TXImage");
 
 TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
-  : xim(0), dpy(d), vis(vis_), depth(depth_), shminfo(0), tig(0), cube(0)
+  : xim(0), dpy(d), vis(vis_), depth(depth_), shminfo(0), tig(0), cube(0), inited(false)
 {
   width_ = width;
   height_ = height;
@@ -58,6 +58,11 @@ TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
   colourmap = this;
   format.bpp = 0;  // just make it different to any valid format, so that...
   setPF(nativePF); // ...setPF() always works
+
+
+//  fprintf(stderr, "TED__TXImage::TXImage --> create pixmap and picture ori(%d, %d) -- scaled(%d, %d)\n",
+//          width_, height_, w_scaled, h_scaled);
+
 }
 
 TXImage::~TXImage()
@@ -66,6 +71,10 @@ TXImage::~TXImage()
   destroyXImage();
   delete tig;
   delete cube;
+  XFreePixmap(dpy, pixmap_src);
+  XFreePixmap(dpy, pixmap_dst);
+  XRenderFreePicture(dpy, picture_src);
+  XRenderFreePicture(dpy, picture_dst);
 }
 
 void TXImage::resize(int w, int h)
@@ -357,33 +366,38 @@ void TXImage::scaleXImage(Window win, GC gc,
                           int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src,
                           int *x_scaled_src, int *y_scaled_src, int *x_scaled_dst, int *y_scaled_dst, int *w_dst, int *h_dst)
 {
-
+  if(!inited)
+  {
+    fprintf(stderr, "TED__TXImage::scaleXImage --> init to create pixmap and picture ori(%d, %d) -- scaled(%d, %d)\n",
+        width_, height_, w_scaled, h_scaled);
+    XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
+    pixmap_src = XCreatePixmap(dpy, win, width_, height_, format->depth);
+    picture_src = XRenderCreatePicture(dpy, pixmap_src, format, 0, NULL);
+    pixmap_dst = XCreatePixmap(dpy, win, w_scaled, h_scaled, format->depth);
+    picture_dst = XRenderCreatePicture(dpy, pixmap_dst, format, 0, NULL);
+    inited = true;
+  }
 //  int mod = 60;
 //
 //  struct timeval tv, tv_end;
 //  struct timezone tz, tz_end;
 //  gettimeofday(&tv, &tz);
   //fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d)\n", tv.tv_usec);
-
-  XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
-  Pixmap src_pixmap = XCreatePixmap(dpy,
-                                    win,
-                                    w_src,
-                                    h_src,
-                                    format->depth);
+//
+//  XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
+//  Pixmap src_pixmap = XCreatePixmap(dpy,
+//                                    win,
+//                                    w_src,
+//                                    h_src,
+//                                    format->depth);
 //  gettimeofday(&tv, &tz);
-//  fprintf(stderr, "TED__TXImage::scaleXImage finish create pixmap at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
+  fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)\n", w_src, h_src);
 
-  XPutImage(dpy, src_pixmap, gc, xim, x_src, y_src, 0, 0, w_src, h_src);
+  XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
 //  gettimeofday(&tv_end, &tz_end);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish xputimage spend(%f)ms\n",
 //          (tv_end.tv_usec - tv.tv_usec)/1000.0);
 
-  Picture src = XRenderCreatePicture(dpy,
-                                     src_pixmap,
-                                     format,
-                                     0,
-                                     NULL);
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish create picture at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 // scale src
@@ -418,52 +432,59 @@ void TXImage::scaleXImage(Window win, GC gc,
                                { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
                        }
   };
-  XRenderSetPictureTransform(dpy, src, &xform);
+  XRenderSetPictureTransform(dpy, picture_src, &xform);
 //    // Apply filter to smooth out the image.
-  XRenderSetPictureFilter(dpy, src, FilterFast, NULL, 0);
+  XRenderSetPictureFilter(dpy, picture_src, FilterFast, NULL, 0);
 //
 // create dst
 
-  Pixmap dst_pixmap = XCreatePixmap(dpy,
-                                    win,
-                                    *w_dst,
-                                    *h_dst,
-                                    format->depth);
 
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish pixmap_dst at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 
-  Picture dst = XRenderCreatePicture(dpy, dst_pixmap, format, 0, NULL);
-  XRenderColor transparent = { 0 };
-  XRenderFillRectangle(dpy,
-                       PictOpSrc,
-                       dst,
-                       &transparent,
-                       0,
-                       0,
-                       w_scaled,
-                       h_scaled);
+//  XRenderColor transparent = { 0 };
+//  XRenderFillRectangle(dpy,
+//                       PictOpSrc,
+//                       dst,
+//                       &transparent,
+//                       0,
+//                       0,
+//                       w_scaled,
+//                       h_scaled);
 
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish create picture_dst at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 // src --> dst
-  XRenderComposite(dpy,
+   XRenderComposite(dpy,
                    PictOpSrc,
-                   src,
+                   picture_src,
                    None,
-                   dst,
+                   picture_dst,
+                   *x_scaled_src,
+                   *y_scaled_src,
                    0,
                    0,
-                   0,
-                   0,
-                   0,
-                   0,
+                   *x_scaled_dst,
+                   *y_scaled_dst,
                    *w_dst,
                    *h_dst);
+//  XRenderComposite(dpy,
+//                   PictOpSrc,
+//                   picture_src,
+//                   None,
+//                   picture_dst,
+//                   0,
+//                   0,
+//                   0,
+//                   0,
+//                   0,
+//                   0,
+//                   w_scaled,
+//                   h_scaled);
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish composite at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 
-  XCopyArea(dpy, dst_pixmap, win, gc, 0, 0, *w_dst, *h_dst, *x_scaled_dst, *y_scaled_dst);
+  XCopyArea(dpy, pixmap_dst, win, gc, *x_scaled_src, *y_scaled_src, *w_dst, *h_dst, *x_scaled_dst, *y_scaled_dst);
 //  xim_scaled = XGetImage(dpy,
 //                            dst_pixmap,
 //                            0,
@@ -475,10 +496,7 @@ void TXImage::scaleXImage(Window win, GC gc,
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish XCopyArea at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 
-  XFreePixmap(dpy, src_pixmap);
-  XFreePixmap(dpy, dst_pixmap);
-  XRenderFreePicture(dpy, src);
-  XRenderFreePicture(dpy, dst);
+
 
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish cleanup at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);

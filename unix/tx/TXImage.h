@@ -83,6 +83,9 @@ private:
     void scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src);
 
   XImage* xim, *xim_scaled;
+    Pixmap pixmap_src, pixmap_dst;
+    Picture picture_src, picture_dst;
+    bool inited;
   Display* dpy;
   Visual* vis;
   int depth;
