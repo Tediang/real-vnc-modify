@@ -121,8 +121,8 @@ void TXViewport::resizeNotify()
   needScrollbars = (!bumpScroll &&
                     (width() < child->width() || height() < child->height()) &&
                     (width() > scrollbarSize && height() > scrollbarSize));
-  fprintf(stderr, "TED__TXViewport::resizeNotify --> parent(%d, %d) --- child(%d, %d)\n",
-          width(), height(), child->width(), child->height());
+//  fprintf(stderr, "TED__TXViewport::resizeNotify --> parent(%d, %d) --- child(%d, %d)\n",
+//          width(), height(), child->width(), child->height());
 
 //  if (needScrollbars) {
 //    clipper->resize(width()-scrollbarSize, height()-scrollbarSize);

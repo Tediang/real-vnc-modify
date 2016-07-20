@@ -62,20 +62,20 @@ public:
   void fillRect(const rfb::Rect& r, rfb::Pixel pix) {
     if (r.overlaps(cursorBackingRect)) hideLocalCursor();
     im->fillRect(r, pix);
-    fprintf(stderr, "TED__DesktopWindow::fillRect --> im->put rect(%d, %d, %d, %d)\n",
-            r.tl.x, r.tl.y,
-            r.width(),
-            r.height());
-    im->put(win(), gc, r);
+//    fprintf(stderr, "TED__DesktopWindow::fillRect --> im->put rect(%d, %d, %d, %d)\n",
+//            r.tl.x, r.tl.y,
+//            r.width(),
+//            r.height());
+//    im->put(win(), gc, r);
     showLocalCursor();
   }
   void imageRect(const rfb::Rect& r, void* pixels) {
     if (r.overlaps(cursorBackingRect)) hideLocalCursor();
     im->imageRect(r, pixels);
-    fprintf(stderr, "TED__DesktopWindow::imageRect --> im->put rect(%d, %d, %d, %d)\n",
-            r.tl.x, r.tl.y,
-            r.width(),
-            r.height());
+//    fprintf(stderr, "TED__DesktopWindow::imageRect --> im->put rect(%d, %d, %d, %d)\n",
+//            r.tl.x, r.tl.y,
+//            r.width(),
+//            r.height());
     im->put(win(), gc, r);
     showLocalCursor();
   }
