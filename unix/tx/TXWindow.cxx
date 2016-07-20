@@ -456,7 +456,7 @@ void TXWindow::handleXEvent(XEvent* ev)
     selectionOwner_[ev->xselectionclear.selection] = false;
     break;
   }
-
+  fprintf(stderr, "TED__TXWindow::handleXEvent --> eventHandler->handleEvent\n");
   if (eventHandler) eventHandler->handleEvent(this, ev);
 }
 

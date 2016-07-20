@@ -298,6 +298,10 @@ void DesktopWindow::invertRect(const Rect& r)
       }
     }
   }
+  fprintf(stderr, "TED__DesktopWindow::invertRect --> im->put rect(%d, %d, %d, %d)\n",
+          r.tl.x, r.tl.y,
+          r.width(),
+          r.height());
   im->put(win(), gc, r);
 }
 
@@ -360,6 +364,10 @@ void DesktopWindow::handleEvent(TXWindow* w, XEvent* ev)
   switch (ev->type) {
   case GraphicsExpose:
   case Expose:
+    fprintf(stderr, "TED__DesktopWindow::handleEvent --> case Expose rect(%d, %d, %d, %d)\n",
+            ev->xexpose.x, ev->xexpose.y,
+            ev->xexpose.x + ev->xexpose.width,
+            ev->xexpose.y + ev->xexpose.height);
     im->put(win(), gc, Rect(ev->xexpose.x, ev->xexpose.y,
                             ev->xexpose.x + ev->xexpose.width,
                             ev->xexpose.y + ev->xexpose.height));

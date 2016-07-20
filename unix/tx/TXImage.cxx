@@ -135,7 +135,7 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   int y = r.tl.y;
   int w = r.width();
   int h = r.height();
-  fprintf(stderr, "TED__TXImage::put --> rect(%d, %d, %d, %d)\n", x, y, w, h);
+  //fprintf(stderr, "TED__TXImage::put --> rect(%d, %d, %d, %d)\n", x, y, w, h);
   if (data != (rdr::U8*)xim->data) {
     rdr::U8* ximDataStart = ((rdr::U8*)xim->data + y * xim->bytes_per_line
                              + x * (xim->bits_per_pixel / 8));
@@ -151,6 +151,8 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   if (usingShm()) {
     XShmPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled, False);
   } else {
+    fprintf(stderr, "TED__TXImage::put --> XPutImage(%d, %d, %d, %d: %d, %d)\n",
+            x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
     XPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
     if (xim_scaled) XDestroyImage(xim_scaled);
     xim_scaled = 0;
@@ -379,8 +381,11 @@ void TXImage::scaleXImage(Window win, GC gc,
   *w_dst = (int)(w_rate * w_src);
   *h_dst = (int)(h_rate * h_src);
 
-  fprintf(stderr, "TED__TXImage::scaleXImage --> xim(%d, %d) --- xim_scaled(%d, %d) --- R.src(%d, %d: %d, %d) --- R.dst(%d, %d)\n",
-          width_, height_, w_scaled, h_scaled, x_src, y_src, w_src, h_src, *w_dst, *h_dst);
+  fprintf(stderr, "TED__TXImage::scaleXImage --> xim(%d, %d) --- xim_scaled(%d, %d) "\
+                          "--- R.src(%d, %d: %d, %d) --- R.dst(%d, %d: %d, %d)\n",
+          width_, height_, w_scaled, h_scaled,
+          x_src, y_src, w_src, h_src,
+          *x_scaled_src, *y_scaled_src, *w_dst, *h_dst);
 
   //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
 
@@ -393,7 +398,7 @@ void TXImage::scaleXImage(Window win, GC gc,
   };
   XRenderSetPictureTransform(dpy, src, &xform);
 //    // Apply filter to smooth out the image.
-//    XRenderSetPictureFilter(d, src, FilterBest, NULL, 0);
+  XRenderSetPictureFilter(dpy, src, FilterBest, NULL, 0);
 //
 // create dst
 
