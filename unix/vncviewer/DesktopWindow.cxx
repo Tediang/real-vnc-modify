@@ -306,6 +306,7 @@ void DesktopWindow::invertRect(const Rect& r)
 // cursor first.
 void DesktopWindow::resize(int w, int h)
 {
+  fprintf(stderr, "TED__DesktopWindow::resize --> TXWindow::resize(%d, %d)\n", w,h);
   hideLocalCursor();
   TXWindow::resize(w, h);
   im->resize(w, h);
