@@ -82,7 +82,7 @@ private:
                      int *x_scaled_src, int *y_scaled_src, int *x_scaled_dst, int *y_scaled_dst, int *w_dst, int *h_dst);
     void scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src);
 
-  XImage* xim, *xim_scaled;
+  XImage* xim;
     Pixmap pixmap_src, pixmap_dst;
     Picture picture_src, picture_dst;
     bool inited;

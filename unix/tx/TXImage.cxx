@@ -156,7 +156,7 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   // scale xim to xim_scaled
   int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled;
   scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &w_scaled, &h_scaled);
-  // scaleXImageCairo(win, gc, x, y, x, y, w, h);
+//    scaleXImageCairo(win, gc, x, y, x, y, w, h);
   //fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
 
 //  if (usingShm()) {
@@ -165,8 +165,7 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
 //    fprintf(stderr, "TED__TXImage::put --> XPutImage(%d, %d, %d, %d: %d, %d)\n",
 //            x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
 //    XPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
-    if (xim_scaled) XDestroyImage(xim_scaled);
-    xim_scaled = 0;
+    //XPutImage(dpy, win, gc, xim, x,y,x,y, w,h);
 //  }
 }
 
