@@ -141,7 +141,7 @@ void CConn::handleEvent(TXWindow* w, XEvent* ev)
         break;
       } else if (w == &menu) {
         if (ev->type == KeyPress) menu.unmap();
-        fprintf(stderr, "TED__CConn::handleXEvent --> desktopEventHandler->handleEvent\n");
+//        fprintf(stderr, "TED__CConn::handleXEvent --> desktopEventHandler->handleEvent\n");
         desktopEventHandler->handleEvent(w, ev);
         break;
       }
@@ -150,7 +150,7 @@ void CConn::handleEvent(TXWindow* w, XEvent* ev)
 
   default:
     if (w == desktop) {
-      fprintf(stderr, "TED__CConn::handleXEvent --> default desktopEventHandler->handleEvent\n");
+//      fprintf(stderr, "TED__CConn::handleXEvent --> default desktopEventHandler->handleEvent\n");
       desktopEventHandler->handleEvent(w, ev);
     }
     else if (w == &menu) menuEventHandler->handleEvent(w, ev);

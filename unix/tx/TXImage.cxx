@@ -154,8 +154,16 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
   }
   // scale xim to xim_scaled
+  if(w > 100){
+    fprintf(stderr, "TED__TXImage::put --> rect(%d, %d: %d, %d)\n", x, y, w, h);
+  }
+
   int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled;
+
   scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &w_scaled, &h_scaled);
+
+  XCopyArea(dpy, pixmap_dst, win, gc, x_scaled_src, y_scaled_src, w_scaled, h_scaled, x_scaled_dst, y_scaled_dst);
+
 //    scaleXImageCairo(win, gc, x, y, x, y, w, h);
   //fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
 
@@ -390,7 +398,7 @@ void TXImage::scaleXImage(Window win, GC gc,
 //                                    h_src,
 //                                    format->depth);
 //  gettimeofday(&tv, &tz);
-  fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)\n", w_src, h_src);
+  //fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)\n", w_src, h_src);
 
   XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
 //  gettimeofday(&tv_end, &tz_end);
@@ -483,7 +491,7 @@ void TXImage::scaleXImage(Window win, GC gc,
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish composite at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 
-  XCopyArea(dpy, pixmap_dst, win, gc, *x_scaled_src, *y_scaled_src, *w_dst, *h_dst, *x_scaled_dst, *y_scaled_dst);
+
 //  xim_scaled = XGetImage(dpy,
 //                            dst_pixmap,
 //                            0,
