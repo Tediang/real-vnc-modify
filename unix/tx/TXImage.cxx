@@ -154,15 +154,31 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
   }
   // scale xim to xim_scaled
-  if(w > 100){
-    fprintf(stderr, "TED__TXImage::put --> rect(%d, %d: %d, %d)\n", x, y, w, h);
-  }
+//  if(w > 100){
+//    fprintf(stderr, "TED__TXImage::put --> rect(%d, %d: %d, %d)\n", x, y, w, h);
+//  }
 
-  int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled;
+  static int mod = 60;
+  static int draw = 1;
+  static int k = 1;
+  struct timeval tv;
+  struct timezone tz;
+  gettimeofday(&tv, &tz);
+  fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d.%d)...%d\n", tv.tv_sec%mod, tv.tv_usec, k++);
 
-  scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &w_scaled, &h_scaled);
+  int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, r_w_scaled, r_h_scaled;
 
-  XCopyArea(dpy, pixmap_dst, win, gc, x_scaled_src, y_scaled_src, w_scaled, h_scaled, x_scaled_dst, y_scaled_dst);
+  scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &r_w_scaled, &r_h_scaled);
+//
+//  if ((draw++)%mod == 0)
+//  {
+//      fprintf(stderr, "TED__TXImage::XCopyArea(%d.%d)...%d\n", w_scaled, h_scaled, draw);
+//     // XCopyArea(dpy, pixmap_dst, win, gc, 0, 0, w_scaled, h_scaled, 0, 0);
+//      draw = 1;
+//  }
+
+
+//    XCopyArea(dpy, pixmap_dst, win, gc, x_scaled_src, y_scaled_src, w_scaled, h_scaled, x_scaled_dst, y_scaled_dst);
 
 //    scaleXImageCairo(win, gc, x, y, x, y, w, h);
   //fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
@@ -382,7 +398,48 @@ void TXImage::scaleXImage(Window win, GC gc,
     picture_src = XRenderCreatePicture(dpy, pixmap_src, format, 0, NULL);
     pixmap_dst = XCreatePixmap(dpy, win, w_scaled, h_scaled, format->depth);
     picture_dst = XRenderCreatePicture(dpy, pixmap_dst, format, 0, NULL);
+
+      double w_rate = (double)w_scaled/width_;
+      double h_rate = (double)h_scaled/height_;
+
+      *x_scaled_src = (int)(w_rate * x_src);
+      *y_scaled_src = (int)(h_rate * y_src);
+      *x_scaled_dst = (int)(w_rate * x_dst);
+      *y_scaled_dst = (int)(h_rate * y_dst);
+
+      int w_dst_tmp = (int)(w_rate * w_src);
+      int h_dst_tmp = (int)(h_rate * h_src);
+
+      *w_dst = w_dst_tmp == 0 ? 1 : w_dst_tmp;
+      *h_dst = h_dst_tmp == 0 ? 1 : h_dst_tmp;
+
+
+
+
+
+//  fprintf(stderr, "TED__TXImage::scaleXImage --> xim(%d, %d) --- xim_scaled(%d, %d) "\
+//                          "--- R.src(%d, %d: %d, %d) --- R.dst(%d, %d: %d, %d)\n",
+//          width_, height_, w_scaled, h_scaled,
+//          x_src, y_src, w_src, h_src,
+//          *x_scaled_src, *y_scaled_src, *w_dst, *h_dst);
+
+      //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
+
+
+      XTransform xform = { {
+                                   { XDoubleToFixed(1/w_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
+                                   { XDoubleToFixed(0), XDoubleToFixed(1/h_rate), XDoubleToFixed(0) },
+                                   { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
+                           }
+      };
+      XRenderSetPictureTransform(dpy, picture_src, &xform);
+//    // Apply filter to smooth out the image.
+      XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest
+
+
     inited = true;
+
+
   }
 //  int mod = 60;
 //
@@ -400,7 +457,8 @@ void TXImage::scaleXImage(Window win, GC gc,
 //  gettimeofday(&tv, &tz);
   //fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)\n", w_src, h_src);
 
-  XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+ /////////// XPutImage(dpy, win, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+    XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
 //  gettimeofday(&tv_end, &tz_end);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish xputimage spend(%f)ms\n",
 //          (tv_end.tv_usec - tv.tv_usec)/1000.0);
@@ -408,40 +466,7 @@ void TXImage::scaleXImage(Window win, GC gc,
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish create picture at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 // scale src
-  double w_rate = (double)w_scaled/width_;
-  double h_rate = (double)h_scaled/height_;
 
-  *x_scaled_src = (int)(w_rate * x_src);
-  *y_scaled_src = (int)(h_rate * y_src);
-  *x_scaled_dst = (int)(w_rate * x_dst);
-  *y_scaled_dst = (int)(h_rate * y_dst);
-
-  int w_dst_tmp = (int)(w_rate * w_src);
-  int h_dst_tmp = (int)(h_rate * h_src);
-
-  *w_dst = w_dst_tmp == 0 ? 1 : w_dst_tmp;
-  *h_dst = h_dst_tmp == 0 ? 1 : h_dst_tmp;
-
-
-
-//  fprintf(stderr, "TED__TXImage::scaleXImage --> xim(%d, %d) --- xim_scaled(%d, %d) "\
-//                          "--- R.src(%d, %d: %d, %d) --- R.dst(%d, %d: %d, %d)\n",
-//          width_, height_, w_scaled, h_scaled,
-//          x_src, y_src, w_src, h_src,
-//          *x_scaled_src, *y_scaled_src, *w_dst, *h_dst);
-
-  //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
-
-
-  XTransform xform = { {
-                               { XDoubleToFixed(1/w_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
-                               { XDoubleToFixed(0), XDoubleToFixed(1/h_rate), XDoubleToFixed(0) },
-                               { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
-                       }
-  };
-  XRenderSetPictureTransform(dpy, picture_src, &xform);
-//    // Apply filter to smooth out the image.
-  XRenderSetPictureFilter(dpy, picture_src, FilterFast, NULL, 0);
 //
 // create dst
 
@@ -462,32 +487,50 @@ void TXImage::scaleXImage(Window win, GC gc,
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish create picture_dst at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 // src --> dst
-   XRenderComposite(dpy,
-                   PictOpSrc,
-                   picture_src,
-                   None,
-                   picture_dst,
-                   *x_scaled_src,
-                   *y_scaled_src,
-                   0,
-                   0,
-                   *x_scaled_dst,
-                   *y_scaled_dst,
-                   *w_dst,
-                   *h_dst);
-//  XRenderComposite(dpy,
+//   XRenderComposite(dpy,
 //                   PictOpSrc,
 //                   picture_src,
 //                   None,
 //                   picture_dst,
+//                   *x_scaled_src,
+//                   *y_scaled_src,
 //                   0,
 //                   0,
-//                   0,
-//                   0,
-//                   0,
-//                   0,
-//                   w_scaled,
-//                   h_scaled);
+//                   *x_scaled_dst,
+//                   *y_scaled_dst,
+//                   *w_dst,
+//                   *h_dst);
+
+
+
+
+    static int draw = 1;
+    static int mod = 20;
+    static int k = 1;
+
+    if ((draw++)%mod == 0)
+    {
+        XRenderComposite(dpy,
+                         PictOpSrc,
+                         picture_src,
+                         None,
+                         picture_dst,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         w_scaled,
+                         h_scaled);
+        fprintf(stderr, "TED__TXImage::XCopyArea(%d.%d)...%d\n", w_scaled, h_scaled, k);
+        XCopyArea(dpy, pixmap_dst, win, gc, 0, 0, w_scaled, h_scaled, 0, 0);
+        draw = 1;
+    }
+
+
+
+  //XCopyArea(dpy, pixmap_dst, win, gc, x_scaled_src, y_scaled_src, w_scaled, h_scaled, x_scaled_dst, y_scaled_dst);
 //  gettimeofday(&tv, &tz);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish composite at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 
