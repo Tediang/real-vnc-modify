@@ -43,6 +43,17 @@
 
 namespace rfb { class TransImageGetter; }
 
+typedef struct WrapRect_
+{
+    int x_left_top;
+    int y_left_top;
+    int x_right_bottom;
+    int y_right_bottom;
+    unsigned int w;
+    unsigned int h;
+} WrapRect;
+
+
 class TXImage : public rfb::FullFramePixelBuffer, public rfb::ColourMap {
 public:
   TXImage(Display* dpy, int width, int height, Visual* vis=0, int depth=0);
@@ -72,20 +83,35 @@ public:
 
 private:
 
+
+
+
   // ColourMap method
   virtual void lookup(int index, int* r, int* g, int* b);
 
   void createXImage();
   void destroyXImage();
   void getNativePixelFormat(Visual* vis, int depth);
+
     void scaleXImage(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src,
                      int *x_scaled_src, int *y_scaled_src, int *x_scaled_dst, int *y_scaled_dst, int *w_dst, int *h_dst);
     void scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src);
+    void addRectToWrapRect(int x, int y, int w, int h);
+    WrapRect getRectToScale();
+    WrapRect getScaledRect(WrapRect *ptr_rect) const;
 
-  XImage* xim;
+
+
+    XImage* xim;
     Pixmap pixmap_src, pixmap_dst;
     Picture picture_src, picture_dst;
+
+
+    WrapRect rect_to_wrap;
+    int extend = 5;
     bool inited;
+    double w_scale_rate;
+    double h_scale_rate;
   Display* dpy;
   Visual* vis;
   int depth;

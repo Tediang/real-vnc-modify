@@ -45,6 +45,8 @@ TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
 {
   width_ = width;
   height_ = height;
+    w_scale_rate = (double)w_scaled/width_;
+    h_scale_rate = (double)h_scaled/height_;
   for (int i = 0; i < 256; i++)
     colourMap[i].r = colourMap[i].g = colourMap[i].b = 0;
 
@@ -164,7 +166,7 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   struct timeval tv;
   struct timezone tz;
   gettimeofday(&tv, &tz);
-  fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d.%d)...%d\n", tv.tv_sec%mod, tv.tv_usec, k++);
+ // fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d.%d)...%d\n", tv.tv_sec%mod, tv.tv_usec, k++);
 
   int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, r_w_scaled, r_h_scaled;
 
@@ -391,115 +393,43 @@ void TXImage::scaleXImage(Window win, GC gc,
 {
   if(!inited)
   {
-    fprintf(stderr, "TED__TXImage::scaleXImage --> init to create pixmap and picture ori(%d, %d) -- scaled(%d, %d)\n",
-        width_, height_, w_scaled, h_scaled);
+    rect_to_wrap = {0};
+    fprintf(stderr, "TED__TXImage::scaleXImage --> init to create pixmap and picture ori(%d, %d) -- scaled(%d, %d)"\
+                        " -- rate(%lf, %lf)\n", width_, height_, w_scaled, h_scaled, w_scale_rate, h_scale_rate);
     XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
     pixmap_src = XCreatePixmap(dpy, win, width_, height_, format->depth);
     picture_src = XRenderCreatePicture(dpy, pixmap_src, format, 0, NULL);
     pixmap_dst = XCreatePixmap(dpy, win, w_scaled, h_scaled, format->depth);
     picture_dst = XRenderCreatePicture(dpy, pixmap_dst, format, 0, NULL);
 
-      double w_rate = (double)w_scaled/width_;
-      double h_rate = (double)h_scaled/height_;
-
-      *x_scaled_src = (int)(w_rate * x_src);
-      *y_scaled_src = (int)(h_rate * y_src);
-      *x_scaled_dst = (int)(w_rate * x_dst);
-      *y_scaled_dst = (int)(h_rate * y_dst);
-
-      int w_dst_tmp = (int)(w_rate * w_src);
-      int h_dst_tmp = (int)(h_rate * h_src);
-
-      *w_dst = w_dst_tmp == 0 ? 1 : w_dst_tmp;
-      *h_dst = h_dst_tmp == 0 ? 1 : h_dst_tmp;
 
 
+//    *x_scaled_src = (int)(w_rate * x_src);
+//    *y_scaled_src = (int)(h_rate * y_src);
+//    *x_scaled_dst = (int)(w_rate * x_dst);
+//    *y_scaled_dst = (int)(h_rate * y_dst);
+//
+//    int w_dst_tmp = (int)(w_rate * w_src);
+//    int h_dst_tmp = (int)(h_rate * h_src);
+//
+//    *w_dst = w_dst_tmp == 0 ? 1 : w_dst_tmp;
+//    *h_dst = h_dst_tmp == 0 ? 1 : h_dst_tmp;
 
-
-
-//  fprintf(stderr, "TED__TXImage::scaleXImage --> xim(%d, %d) --- xim_scaled(%d, %d) "\
-//                          "--- R.src(%d, %d: %d, %d) --- R.dst(%d, %d: %d, %d)\n",
-//          width_, height_, w_scaled, h_scaled,
-//          x_src, y_src, w_src, h_src,
-//          *x_scaled_src, *y_scaled_src, *w_dst, *h_dst);
-
-      //double scale_rate = w_rate > h_rate ? h_rate : w_rate;
-
-
-      XTransform xform = { {
-                                   { XDoubleToFixed(1/w_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
-                                   { XDoubleToFixed(0), XDoubleToFixed(1/h_rate), XDoubleToFixed(0) },
-                                   { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
-                           }
-      };
-      XRenderSetPictureTransform(dpy, picture_src, &xform);
-//    // Apply filter to smooth out the image.
-      XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest
-
-
+    XTransform xform = { {
+                               { XDoubleToFixed(1/w_scale_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
+                               { XDoubleToFixed(0), XDoubleToFixed(1/h_scale_rate), XDoubleToFixed(0) },
+                               { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
+                       }
+    };
+    XRenderSetPictureTransform(dpy, picture_src, &xform);
+    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest
     inited = true;
 
 
   }
-//  int mod = 60;
-//
-//  struct timeval tv, tv_end;
-//  struct timezone tz, tz_end;
-//  gettimeofday(&tv, &tz);
-  //fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d)\n", tv.tv_usec);
-//
-//  XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
-//  Pixmap src_pixmap = XCreatePixmap(dpy,
-//                                    win,
-//                                    w_src,
-//                                    h_src,
-//                                    format->depth);
-//  gettimeofday(&tv, &tz);
-  //fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)\n", w_src, h_src);
-
- /////////// XPutImage(dpy, win, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+    addRectToWrapRect(x_src, y_src, w_src, h_src);
     XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
-//  gettimeofday(&tv_end, &tz_end);
-//  fprintf(stderr, "TED__TXImage::scaleXImage finish xputimage spend(%f)ms\n",
-//          (tv_end.tv_usec - tv.tv_usec)/1000.0);
 
-//  gettimeofday(&tv, &tz);
-//  fprintf(stderr, "TED__TXImage::scaleXImage finish create picture at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
-// scale src
-
-//
-// create dst
-
-
-//  gettimeofday(&tv, &tz);
-//  fprintf(stderr, "TED__TXImage::scaleXImage finish pixmap_dst at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
-
-//  XRenderColor transparent = { 0 };
-//  XRenderFillRectangle(dpy,
-//                       PictOpSrc,
-//                       dst,
-//                       &transparent,
-//                       0,
-//                       0,
-//                       w_scaled,
-//                       h_scaled);
-
-//  gettimeofday(&tv, &tz);
-//  fprintf(stderr, "TED__TXImage::scaleXImage finish create picture_dst at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
-// src --> dst
-//   XRenderComposite(dpy,
-//                   PictOpSrc,
-//                   picture_src,
-//                   None,
-//                   picture_dst,
-//                   *x_scaled_src,
-//                   *y_scaled_src,
-//                   0,
-//                   0,
-//                   *x_scaled_dst,
-//                   *y_scaled_dst,
-//                   *w_dst,
-//                   *h_dst);
 
 
 
@@ -510,22 +440,36 @@ void TXImage::scaleXImage(Window win, GC gc,
 
     if ((draw++)%mod == 0)
     {
+
+        WrapRect rect_to_scale = getRectToScale();
+        WrapRect rect_scaled = getScaledRect(&rect_to_scale);
+        WrapRect rect_to_draw = getScaledRect(&rect_to_wrap);
         XRenderComposite(dpy,
                          PictOpSrc,
                          picture_src,
                          None,
                          picture_dst,
+                         rect_to_scale.x_left_top,
+                         rect_to_scale.y_left_top,
                          0,
                          0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         w_scaled,
-                         h_scaled);
+                         rect_scaled.x_left_top,
+                         rect_scaled.y_left_top,
+                         rect_scaled.w,
+                         rect_scaled.h);
         fprintf(stderr, "TED__TXImage::XCopyArea(%d.%d)...%d\n", w_scaled, h_scaled, k);
-        XCopyArea(dpy, pixmap_dst, win, gc, 0, 0, w_scaled, h_scaled, 0, 0);
+        XCopyArea(dpy,
+                  pixmap_dst,
+                  win,
+                  gc,
+                  rect_to_draw.x_left_top,
+                  rect_to_draw.y_left_top,
+                  rect_to_draw.w,
+                  rect_to_draw.h,
+                  rect_to_draw.x_left_top,
+                  rect_to_draw.y_left_top);
         draw = 1;
+        rect_to_wrap = {0};
     }
 
 
@@ -595,3 +539,75 @@ void TXImage::scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_ds
   gettimeofday(&tv, &tz);
   fprintf(stderr, "TED__TXImage::scaleXImageCairo finish cleanup at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 }
+
+void TXImage::addRectToWrapRect(int x_, int y_, int w_, int h_)
+{
+    fprintf(stderr, "TED__TXImage::addRectToWrapRect --> r(%d, %d, %d, %d)\n", x_, y_, w_, h_);
+    int x_right_bottom_ = x_ + w_;
+    int y_right_bottom_ = y_ + h_;
+
+    // add the first rect
+    if(rect_to_wrap.y_right_bottom == 0)
+    {
+        rect_to_wrap.x_left_top = x_;
+        rect_to_wrap.y_left_top = y_;
+        rect_to_wrap.x_right_bottom = x_right_bottom_;
+        rect_to_wrap.y_right_bottom = y_right_bottom_;
+    }
+    else
+    {
+        // calculate the wrapped rect size
+        rect_to_wrap.x_left_top = x_ < rect_to_wrap.x_left_top ? x_ : rect_to_wrap.x_left_top;
+        rect_to_wrap.y_left_top = y_ < rect_to_wrap.y_left_top ? y_ : rect_to_wrap.y_left_top;
+        rect_to_wrap.x_right_bottom = x_right_bottom_ > rect_to_wrap.x_right_bottom ? x_right_bottom_ : rect_to_wrap.x_right_bottom;
+        rect_to_wrap.y_right_bottom = y_right_bottom_ > rect_to_wrap.y_right_bottom ? y_right_bottom_ : rect_to_wrap.y_right_bottom;
+    }
+    fprintf(stderr, "TED__TXImage::addRectToWrapRect --> wrap_r(%d, %d, %d, %d)\n\n",
+            rect_to_wrap.x_left_top,
+            rect_to_wrap.y_left_top,
+            rect_to_wrap.x_right_bottom,
+            rect_to_wrap.y_right_bottom);
+}
+
+WrapRect TXImage::getRectToScale()
+{
+    //extend 'rect_to_wrap' ${extend} pix.
+    WrapRect ret_rect = {0};
+    ret_rect.x_left_top = (rect_to_wrap.x_left_top - extend) > 0 ? (rect_to_wrap.x_left_top - extend) : 0;
+    ret_rect.y_left_top = (rect_to_wrap.y_left_top - extend) > 0 ? (rect_to_wrap.y_left_top - extend) : 0;
+    ret_rect.x_right_bottom = (rect_to_wrap.x_right_bottom + extend) < width_ ?  (rect_to_wrap.x_right_bottom + extend) :width_;
+    ret_rect.y_right_bottom = (rect_to_wrap.y_right_bottom + extend) < height_ ?  (rect_to_wrap.y_right_bottom + extend) :height_;
+
+    fprintf(stderr, "TED__TXImage::getRectToScale --> to_scale_r(%d, %d, %d, %d)\n",
+            ret_rect.x_left_top,
+            ret_rect.y_left_top,
+            ret_rect.x_right_bottom,
+            ret_rect.y_right_bottom);
+
+    return ret_rect;
+}
+
+WrapRect TXImage::getScaledRect(WrapRect *ptr_rect) const
+{
+    int w_ = ptr_rect->x_right_bottom - ptr_rect->x_left_top;
+    int h_ = ptr_rect->y_right_bottom - ptr_rect->y_left_top;
+
+    WrapRect ret_rect = {0};
+    ret_rect.x_left_top = (int)(ptr_rect->x_left_top * w_scale_rate);
+    ret_rect.y_left_top = (int) (ptr_rect->y_left_top * h_scale_rate);
+    ret_rect.w = (unsigned int) (w_ * w_scale_rate);
+    ret_rect.h = (unsigned int) (h_ * h_scale_rate);
+
+    fprintf(stderr, "TED__TXImage::getRectToScale --> scaled_r(%d, %d:  %d, %d)\n",
+            ret_rect.x_left_top,
+            ret_rect.y_left_top,
+            ret_rect.w,
+            ret_rect.h);
+    return ret_rect;
+}
+
+
+
+
+
+
