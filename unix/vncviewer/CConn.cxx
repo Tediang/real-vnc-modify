@@ -328,9 +328,11 @@ void CConn::endRect(const Rect& r, unsigned int encoding)
 }
 
 void CConn::fillRect(const rfb::Rect& r, rfb::Pixel p) {
+//    fprintf(stderr, "TED__CConn::imageRect --> desktop->fillRect(%d, %d, %d, %d)\n",r.tl.x, r.tl.y, r.width(), r.height());
   desktop->fillRect(r,p);
 }
 void CConn::imageRect(const rfb::Rect& r, void* p) {
+//    fprintf(stderr, "TED__CConn::imageRect --> desktop->imageRect(%d, %d, %d, %d)\n",r.tl.x, r.tl.y, r.width(), r.height());
   desktop->imageRect(r,p);
 }
 void CConn::copyRect(const rfb::Rect& r, int sx, int sy) {

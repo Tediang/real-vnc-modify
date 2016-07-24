@@ -361,6 +361,18 @@ void DesktopWindow::handlePointerEvent(const Point& pos, int buttonMask)
 // handleXEvent() handles the various X events on the window
 void DesktopWindow::handleEvent(TXWindow* w, XEvent* ev)
 {
+    double w_scale_rate, h_scaled_rate;
+//    w_scale_rate = (double)(w_scaled)/width();
+//    h_scaled_rate = (double)(h_scaled)/height();
+
+    w_scale_rate = (double)1920/(w_scaled);
+    h_scaled_rate = (double)1080/(h_scaled);
+    int x_start = (int)(ev->xexpose.x * w_scale_rate);
+    int y_start = (int)(ev->xexpose.y *h_scaled_rate);
+    int x_end = (int)((ev->xexpose.x + ev->xexpose.width) * w_scale_rate);
+    int y_end = (int)((ev->xexpose.y + ev->xexpose.height) * h_scaled_rate);
+
+   // fprintf(stderr, "TED__DesktopWindow::handleEvent --> w(%d, %d)\n", width(), height());
   switch (ev->type) {
   case GraphicsExpose:
   case Expose:
@@ -368,92 +380,105 @@ void DesktopWindow::handleEvent(TXWindow* w, XEvent* ev)
             ev->xexpose.x, ev->xexpose.y,
             ev->xexpose.x + ev->xexpose.width,
             ev->xexpose.y + ev->xexpose.height);
-    im->put(win(), gc, Rect(ev->xexpose.x, ev->xexpose.y,
-                            ev->xexpose.x + ev->xexpose.width,
-                            ev->xexpose.y + ev->xexpose.height));
+
+//
+//    im->put(win(), gc, Rect((int)(ev->xexpose.x * w_scale_rate),
+//                            (int)(ev->xexpose.y *h_scaled_rate),
+//                            (int)((ev->xexpose.x + ev->xexpose.width) * w_scale_rate) ,
+//                            ev->xexpose.y + ev->xexpose.height));
+//    fprintf(stderr, "TED__DesktopWindow::handleEvent --> im->put(%d, %d: %d, %d)\n",
+//                    x_start, y_start, x_end, y_end);
+    im->put(win(), gc, Rect(x_start, y_start, x_end, y_end));
     break;
 
-  case MotionNotify:
-    while (XCheckTypedWindowEvent(dpy, win(), MotionNotify, ev));
-    if (viewport && viewport->bumpScrollEvent(&ev->xmotion)) break;
-    handlePointerEvent(Point(ev->xmotion.x, ev->xmotion.y),
-                       (ev->xmotion.state & 0x1f00) >> 8);
-    break;
-
-  case ButtonPress:
-    handlePointerEvent(Point(ev->xbutton.x, ev->xbutton.y),
-                       (((ev->xbutton.state & 0x1f00) >> 8) |
-                        (1 << (ev->xbutton.button-1))));
-    break;
-
-  case ButtonRelease:
-    handlePointerEvent(Point(ev->xbutton.x, ev->xbutton.y),
-                       (((ev->xbutton.state & 0x1f00) >> 8) &
-                        ~(1 << (ev->xbutton.button-1))));
-    break;
-
-  case KeyPress:
-    if (!viewOnly) {
-      KeySym ks;
-      char keyname[256];
-      XLookupString(&ev->xkey, keyname, 256, &ks, NULL);
-      bool fakeShiftPress = false;
-
-      // Turn ISO_Left_Tab into shifted Tab
-      if (ks == XK_ISO_Left_Tab) {
-        fakeShiftPress = !(ev->xkey.state & ShiftMask);
-        ks = XK_Tab;
-      }
-
-      if (fakeShiftPress)
-        cc->writer()->keyEvent(XK_Shift_L, true);
-
-      downKeysym[ev->xkey.keycode] = ks;
-      cc->writer()->keyEvent(ks, true);
-
-      if (fakeShiftPress)
-        cc->writer()->keyEvent(XK_Shift_L, false);
-      break;
-    }
-
-  case KeyRelease:
-    if (!viewOnly) {
-      if (downKeysym[ev->xkey.keycode]) {
-        cc->writer()->keyEvent(downKeysym[ev->xkey.keycode], false);
-        downKeysym[ev->xkey.keycode] = 0;
-      }
-    }
-    break;
-
-  case EnterNotify:
-    newSelection = 0;
-    if (sendPrimary && !selectionOwner(XA_PRIMARY)) {
-      XConvertSelection(dpy, XA_PRIMARY, xaTIMESTAMP, xaSELECTION_TIME,
-                        win(), ev->xcrossing.time);
-    } else if (!selectionOwner(xaCLIPBOARD)) {
-      XConvertSelection(dpy, xaCLIPBOARD, xaTIMESTAMP, xaSELECTION_TIME,
-                        win(), ev->xcrossing.time);
-    }
-    break;
-
-  case LeaveNotify:
-    if (serverCutText_ && newServerCutText) {
-      newServerCutText = false;
-      vlog.debug("acquiring primary and clipboard selections");
-      XStoreBytes(dpy, serverCutText_, strlen(serverCutText_));
-      ownSelection(XA_PRIMARY, ev->xcrossing.time);
-      ownSelection(xaCLIPBOARD, ev->xcrossing.time);
-      currentSelectionTime = ev->xcrossing.time;
-    }
-    // Release all keys - this should probably done on a FocusOut event, but
-    // LeaveNotify is near enough...
-    for (int i = 8; i < 256; i++) {
-      if (downKeysym[i]) {
-        cc->writer()->keyEvent(downKeysym[i], false);
-        downKeysym[i] = 0;
-      }
-    }
-    break;
+//  case MotionNotify:
+//    fprintf(stderr, "TED__DesktopWindow::handleEvent --> MotionNotify\n");
+//    while (XCheckTypedWindowEvent(dpy, win(), MotionNotify, ev));
+//    if (viewport && viewport->bumpScrollEvent(&ev->xmotion)) break;
+//    handlePointerEvent(Point(ev->xmotion.x, ev->xmotion.y),
+//                       (ev->xmotion.state & 0x1f00) >> 8);
+//    break;
+//
+//  case ButtonPress:
+//      fprintf(stderr, "TED__DesktopWindow::handleEvent --> ButtonPress\n");
+//    handlePointerEvent(Point(ev->xbutton.x, ev->xbutton.y),
+//                       (((ev->xbutton.state & 0x1f00) >> 8) |
+//                        (1 << (ev->xbutton.button-1))));
+//    break;
+//
+//  case ButtonRelease:
+//      fprintf(stderr, "TED__DesktopWindow::handleEvent --> ButtonRelease\n");
+//    handlePointerEvent(Point(ev->xbutton.x, ev->xbutton.y),
+//                       (((ev->xbutton.state & 0x1f00) >> 8) &
+//                        ~(1 << (ev->xbutton.button-1))));
+//    break;
+//
+//  case KeyPress:
+//      fprintf(stderr, "TED__DesktopWindow::handleEvent --> KeyPress\n");
+//    if (!viewOnly) {
+//      KeySym ks;
+//      char keyname[256];
+//      XLookupString(&ev->xkey, keyname, 256, &ks, NULL);
+//      bool fakeShiftPress = false;
+//
+//      // Turn ISO_Left_Tab into shifted Tab
+//      if (ks == XK_ISO_Left_Tab) {
+//        fakeShiftPress = !(ev->xkey.state & ShiftMask);
+//        ks = XK_Tab;
+//      }
+//
+//      if (fakeShiftPress)
+//        cc->writer()->keyEvent(XK_Shift_L, true);
+//
+//      downKeysym[ev->xkey.keycode] = ks;
+//      cc->writer()->keyEvent(ks, true);
+//
+//      if (fakeShiftPress)
+//        cc->writer()->keyEvent(XK_Shift_L, false);
+//      break;
+//    }
+//
+//  case KeyRelease:
+//      fprintf(stderr, "TED__DesktopWindow::handleEvent --> KeyRelease\n");
+//    if (!viewOnly) {
+//      if (downKeysym[ev->xkey.keycode]) {
+//        cc->writer()->keyEvent(downKeysym[ev->xkey.keycode], false);
+//        downKeysym[ev->xkey.keycode] = 0;
+//      }
+//    }
+//    break;
+//
+//  case EnterNotify:
+//      fprintf(stderr, "TED__DesktopWindow::handleEvent --> EnterNotify\n");
+//    newSelection = 0;
+//    if (sendPrimary && !selectionOwner(XA_PRIMARY)) {
+//      XConvertSelection(dpy, XA_PRIMARY, xaTIMESTAMP, xaSELECTION_TIME,
+//                        win(), ev->xcrossing.time);
+//    } else if (!selectionOwner(xaCLIPBOARD)) {
+//      XConvertSelection(dpy, xaCLIPBOARD, xaTIMESTAMP, xaSELECTION_TIME,
+//                        win(), ev->xcrossing.time);
+//    }
+//    break;
+//
+//  case LeaveNotify:
+//      fprintf(stderr, "TED__DesktopWindow::handleEvent --> LeaveNotify\n");
+//    if (serverCutText_ && newServerCutText) {
+//      newServerCutText = false;
+//      vlog.debug("acquiring primary and clipboard selections");
+//      XStoreBytes(dpy, serverCutText_, strlen(serverCutText_));
+//      ownSelection(XA_PRIMARY, ev->xcrossing.time);
+//      ownSelection(xaCLIPBOARD, ev->xcrossing.time);
+//      currentSelectionTime = ev->xcrossing.time;
+//    }
+//    // Release all keys - this should probably done on a FocusOut event, but
+//    // LeaveNotify is near enough...
+//    for (int i = 8; i < 256; i++) {
+//      if (downKeysym[i]) {
+//        cc->writer()->keyEvent(downKeysym[i], false);
+//        downKeysym[i] = 0;
+//      }
+//    }
+//    break;
   }
 }
 
