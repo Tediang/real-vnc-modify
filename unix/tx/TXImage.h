@@ -105,7 +105,7 @@ private:
     XImage* xim;
     Pixmap pixmap_src, pixmap_dst;
     Picture picture_src, picture_dst;
-    struct timeval tv;
+    struct timeval tv, tv_end;
 
     WrapRect rect_to_wrap;
     int extend = 5;

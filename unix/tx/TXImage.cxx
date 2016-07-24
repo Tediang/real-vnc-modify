@@ -409,7 +409,10 @@ void TXImage::scaleXImage(Window win, GC gc,
                        }
     };
     XRenderSetPictureTransform(dpy, picture_src, &xform);
-    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest
+    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0);
+
+    gettimeofday(&tv, NULL);
+    tv_end = {0};
     inited = true;
 
 
@@ -418,14 +421,16 @@ void TXImage::scaleXImage(Window win, GC gc,
     XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
 
 
+    fprintf(stderr, "TED__TXImage::scaleXImage ----> tv_end(%d)-tv(%d)=(%d)\n",
+             tv_end.tv_usec, tv.tv_usec, (tv_end.tv_usec - tv.tv_usec));
 
-    gettimeofday(&tv, NULL);
+    gettimeofday(&tv_end, NULL);
 
     static int draw = 1;
     static int mod = 20;
     static int k = 1;
 
-    //if ((tv.tv_usec / 1000)% mod == 0)
+    if ((tv_end.tv_usec - tv.tv_usec) >= 30 * 1000 || (tv.tv_usec - tv_end.tv_usec) >= 30 * 1000)
     {
         fprintf(stderr, "TED__TXImage::scaleXImage ----> "\
         "rect_to_wrap(x_start=%d, y_start=%d, w=%d, h=%d, x_end=%d, y=end%d)\n",
@@ -513,6 +518,7 @@ void TXImage::scaleXImage(Window win, GC gc,
                   0);
         draw = 1;
         rect_to_wrap = {0};
+        tv = tv_end;
     }
 
 
