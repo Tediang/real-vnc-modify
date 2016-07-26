@@ -33,6 +33,7 @@
 #ifndef __TXIMAGE_H__
 #define __TXIMAGE_H__
 
+#include <pthread.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrender.h>
 #include <stdlib.h>
@@ -42,6 +43,8 @@
 #include <X11/extensions/XShm.h>
 
 namespace rfb { class TransImageGetter; }
+
+void* drawWindow_thread(void *argv);
 
 class TXImage : public rfb::FullFramePixelBuffer, public rfb::ColourMap {
 public:
@@ -85,6 +88,8 @@ private:
   XImage* xim;
     Pixmap pixmap_src, pixmap_dst;
     Picture picture_src, picture_dst;
+
+    pthread_t thread_draw;
     bool inited;
   Display* dpy;
   Visual* vis;

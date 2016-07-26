@@ -40,6 +40,19 @@ using namespace rfb;
 
 static rfb::LogWriter vlog("TXImage");
 
+struct st_draw_
+{
+    Display *dpy;
+    Window win;
+    Picture pic_src;
+    Picture pic_dst;
+    Pixmap pix_dst;
+    GC gc;
+    int w;
+    int h;
+} *pSt_draw_;
+pthread_mutex_t mutex;
+
 TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
   : xim(0), dpy(d), vis(vis_), depth(depth_), shminfo(0), tig(0), cube(0), inited(false)
 {
@@ -58,6 +71,8 @@ TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
   colourmap = this;
   format.bpp = 0;  // just make it different to any valid format, so that...
   setPF(nativePF); // ...setPF() always works
+  pthread_mutex_init(&mutex, NULL);
+
 
 
 //  fprintf(stderr, "TED__TXImage::TXImage --> create pixmap and picture ori(%d, %d) -- scaled(%d, %d)\n",
@@ -75,6 +90,7 @@ TXImage::~TXImage()
   XFreePixmap(dpy, pixmap_dst);
   XRenderFreePicture(dpy, picture_src);
   XRenderFreePicture(dpy, picture_dst);
+  delete pSt_draw_;
 }
 
 void TXImage::resize(int w, int h)
@@ -164,7 +180,7 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   struct timeval tv;
   struct timezone tz;
   gettimeofday(&tv, &tz);
-  fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d.%d)...%d\n", tv.tv_sec%mod, tv.tv_usec, k++);
+  //fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d.%d)...%d\n", tv.tv_sec%mod, tv.tv_usec, k++);
 
   int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, r_w_scaled, r_h_scaled;
 
@@ -436,16 +452,53 @@ void TXImage::scaleXImage(Window win, GC gc,
 //    // Apply filter to smooth out the image.
       XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest
 
+      fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat111 draw!!!!!!!!!\n"\
+            "p_dpy=%s, gc=%s, win=%d, pic_src=%d, pic_dst=%d, pix=%d, w=%d, h=%d\n",
+              dpy,
+              gc,
+              win,
+              picture_src,
+              picture_dst,
+              pixmap_dst,
+              w_scaled,
+              h_scaled);
 
+
+
+      pSt_draw_ = new st_draw_;
+      pSt_draw_->dpy = dpy;
+      pSt_draw_->win = win;
+      pSt_draw_->gc = gc;
+      pSt_draw_->pic_src = picture_src;
+      pSt_draw_->pic_dst = picture_dst;
+      pSt_draw_->pix_dst = pixmap_dst;
+      pSt_draw_->w = w_scaled;
+      pSt_draw_->h = h_scaled;
+
+      fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat222 draw!!!!!!!!!\n"\
+            "p_dpy=%s, gc=%s, win=%d, pic_src=%d, pic_dst=%d, pix=%d, w=%d, h=%d\n",
+              pSt_draw_->dpy,
+              pSt_draw_->gc,
+              pSt_draw_->win,
+              pSt_draw_->pic_src,
+              pSt_draw_->pic_dst,
+              pSt_draw_->pix_dst,
+              pSt_draw_->w,
+              pSt_draw_->h);
+
+
+
+      int rc = pthread_create(&thread_draw, NULL, drawWindow_thread, (void *)pSt_draw_);
+      fprintf(stderr, "TED__TXImage::scaleXImage --> init_rc(%d)\n", 1);
     inited = true;
 
 
   }
 //  int mod = 60;
 //
-//  struct timeval tv, tv_end;
-//  struct timezone tz, tz_end;
-//  gettimeofday(&tv, &tz);
+  struct timeval tv, tv_end;
+  //struct timezone tz, tz_end;
+  gettimeofday(&tv, NULL);
   //fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d)\n", tv.tv_usec);
 //
 //  XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
@@ -455,10 +508,12 @@ void TXImage::scaleXImage(Window win, GC gc,
 //                                    h_src,
 //                                    format->depth);
 //  gettimeofday(&tv, &tz);
-  //fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)\n", w_src, h_src);
+    fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)..at(%d)\n", w_src, h_src, tv.tv_usec/1000);
 
  /////////// XPutImage(dpy, win, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+    pthread_mutex_lock(&mutex);
     XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
+    pthread_mutex_unlock(&mutex);
 //  gettimeofday(&tv_end, &tz_end);
 //  fprintf(stderr, "TED__TXImage::scaleXImage finish xputimage spend(%f)ms\n",
 //          (tv_end.tv_usec - tv.tv_usec)/1000.0);
@@ -510,22 +565,22 @@ void TXImage::scaleXImage(Window win, GC gc,
 
     if ((draw++)%mod == 0)
     {
-        XRenderComposite(dpy,
-                         PictOpSrc,
-                         picture_src,
-                         None,
-                         picture_dst,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         w_scaled,
-                         h_scaled);
-        fprintf(stderr, "TED__TXImage::XCopyArea(%d.%d)...%d\n", w_scaled, h_scaled, k);
-        XCopyArea(dpy, pixmap_dst, win, gc, 0, 0, w_scaled, h_scaled, 0, 0);
-        draw = 1;
+//        XRenderComposite(dpy,
+//                         PictOpSrc,
+//                         picture_src,
+//                         None,
+//                         picture_dst,
+//                         0,
+//                         0,
+//                         0,
+//                         0,
+//                         0,
+//                         0,
+//                         w_scaled,
+//                         h_scaled);
+//        fprintf(stderr, "TED__TXImage::XCopyArea(%d.%d)...%d\n", w_scaled, h_scaled, k);
+//        XCopyArea(dpy, pixmap_dst, win, gc, 0, 0, w_scaled, h_scaled, 0, 0);
+//        draw = 1;
     }
 
 
@@ -595,3 +650,69 @@ void TXImage::scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_ds
   gettimeofday(&tv, &tz);
   fprintf(stderr, "TED__TXImage::scaleXImageCairo finish cleanup at(%d.%d)\n", tv.tv_sec%mod, tv.tv_usec);
 }
+
+void* drawWindow_thread(void *argv) {
+    st_draw_ *pSt_draw = (st_draw_ *)argv;
+    fprintf(stderr, "TED__TXImage::drawWindow_thread(%d.%d)...%d\n", pSt_draw->w, pSt_draw->h, 1);
+    struct timeval tv, tv_end;
+    gettimeofday(&tv, NULL);
+    int period = 20 * 1000; //unit: ms
+
+    while (true){
+        gettimeofday(&tv_end, NULL);
+//        if(tv_end.tv_sec != tv.tv_sec && tv_end.tv_sec % 3 == 0){
+//            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat tv(%d.%d) - tv_end(%d, %d)\n",
+//                     tv.tv_sec, tv.tv_usec, tv_end.tv_sec, tv_end.tv_usec);
+//        }
+
+        if(tv_end.tv_sec - tv.tv_sec != 0
+        || tv_end.tv_usec - tv.tv_usec > period
+        || tv.tv_usec - tv_end.tv_usec > period ) {
+            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat draw!!!!!!!!!\n"\
+            "p_dpy=%s, gc=%s, win=%d, pic_src=%d, pic_dst=%d, pix=%d, w=%d, h=%d\n"\
+            "at(%d.%d - %d.%d)",
+                    pSt_draw->dpy,
+                    pSt_draw->gc,
+                    pSt_draw->win,
+                    pSt_draw->pic_src,
+                    pSt_draw->pic_dst,
+                    pSt_draw->pix_dst,
+                    pSt_draw->w,
+                    pSt_draw->h,
+                    tv_end.tv_sec,
+                    tv_end.tv_usec,
+                    tv.tv_sec,
+                    tv.tv_usec);
+
+            pthread_mutex_lock(&mutex);
+            XRenderComposite(pSt_draw->dpy,
+                             PictOpSrc,
+                             pSt_draw->pic_src,
+                             None,
+                             pSt_draw->pic_dst,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             pSt_draw->w,
+                             pSt_draw->h);
+
+            XCopyArea(pSt_draw->dpy,
+                      pSt_draw->pix_dst,
+                      pSt_draw->win,
+                      pSt_draw->gc,
+                      0,
+                      0,
+                      pSt_draw->w,
+                      pSt_draw->h,
+                      0,
+                      0);
+            pthread_mutex_unlock(&mutex);
+        }
+        tv = tv_end;
+    }
+
+    return NULL;
+ }
