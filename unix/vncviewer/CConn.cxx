@@ -189,7 +189,9 @@ void CConn::blockCallback() {
     FD_SET(sock->getFd(), &rfds);
     int n = select(FD_SETSIZE, &rfds, 0, 0, tvp);
     if (n < 0) throw rdr::SystemException("select",errno);
+    fprintf(stderr, "TED__CConn::blockCallback --> while..selsect(%d)..fd_isset(%d)\n", n, (FD_ISSET(sock->getFd(), &rfds)));
   } while (!(FD_ISSET(sock->getFd(), &rfds)));
+    fprintf(stderr, "TED__CConn::blockCallback --> while done \n");
 }
 
 

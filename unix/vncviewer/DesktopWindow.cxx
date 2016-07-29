@@ -361,6 +361,7 @@ void DesktopWindow::handlePointerEvent(const Point& pos, int buttonMask)
 // handleXEvent() handles the various X events on the window
 void DesktopWindow::handleEvent(TXWindow* w, XEvent* ev)
 {
+  fprintf(stderr, "TED__DesktopWindow::handleEvent --> gen xEvent!!!!!!!!!!!!\n");
   switch (ev->type) {
   case GraphicsExpose:
   case Expose:

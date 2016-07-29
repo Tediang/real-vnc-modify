@@ -508,10 +508,11 @@ void TXImage::scaleXImage(Window win, GC gc,
 //                                    h_src,
 //                                    format->depth);
 //  gettimeofday(&tv, &tz);
-    fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)..at(%d)\n", w_src, h_src, tv.tv_usec/1000);
+ //   fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)..at(%d)\n", w_src, h_src, tv.tv_usec/1000);
 
  /////////// XPutImage(dpy, win, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
     pthread_mutex_lock(&mutex);
+    fprintf(stderr, "TED__TXImage::scaleXImage XPutImage(%d.%d)..at(%d)\n", w_src, h_src, tv.tv_usec/1000);
     XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
     pthread_mutex_unlock(&mutex);
 //  gettimeofday(&tv_end, &tz_end);
@@ -653,35 +654,36 @@ void TXImage::scaleXImageCairo(Window win, GC gc, int x_src, int y_src, int x_ds
 
 void* drawWindow_thread(void *argv) {
     st_draw_ *pSt_draw = (st_draw_ *)argv;
-    fprintf(stderr, "TED__TXImage::drawWindow_thread(%d.%d)...%d\n", pSt_draw->w, pSt_draw->h, 1);
-    struct timeval tv, tv_end;
+    //fprintf(stderr, "TED__TXImage::drawWindow_thread(%d.%d)...%d\n", pSt_draw->w, pSt_draw->h, 1);
+    struct timeval tv, tv_end, tv_end_last;
     gettimeofday(&tv, NULL);
-    int period = 20 * 1000; //unit: ms
+    int period = 500 * 1000; //unit: ms
 
     while (true){
         gettimeofday(&tv_end, NULL);
-//        if(tv_end.tv_sec != tv.tv_sec && tv_end.tv_sec % 3 == 0){
-//            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat tv(%d.%d) - tv_end(%d, %d)\n",
+       // if(tv_end.tv_sec != tv.tv_sec && tv_end.tv_sec % 3 == 0){
+//            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat while tv(%d.%d) - tv_end(%d, %d)\n",
 //                     tv.tv_sec, tv.tv_usec, tv_end.tv_sec, tv_end.tv_usec);
-//        }
+       // }
 
         if(tv_end.tv_sec - tv.tv_sec != 0
         || tv_end.tv_usec - tv.tv_usec > period
         || tv.tv_usec - tv_end.tv_usec > period ) {
-            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat draw!!!!!!!!!\n"\
-            "p_dpy=%s, gc=%s, win=%d, pic_src=%d, pic_dst=%d, pix=%d, w=%d, h=%d\n"\
-            "at(%d.%d - %d.%d)",
-                    pSt_draw->dpy,
-                    pSt_draw->gc,
-                    pSt_draw->win,
-                    pSt_draw->pic_src,
-                    pSt_draw->pic_dst,
-                    pSt_draw->pix_dst,
-                    pSt_draw->w,
-                    pSt_draw->h,
-                    tv_end.tv_sec,
+            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat draw "\
+            "at(%d.%d - %d.%d)\n",
+            //"p_dpy=%s, gc=%s, win=%d, pic_src=%d, pic_dst=%d, pix=%d, w=%d, h=%d\n"\
+
+//            pSt_draw->dpy,
+//                    pSt_draw->gc,
+//                    pSt_draw->win,
+//                    pSt_draw->pic_src,
+//                    pSt_draw->pic_dst,
+//                    pSt_draw->pix_dst,
+//                    pSt_draw->w,
+//                    pSt_draw->h,
+                    tv_end.tv_sec%60,
                     tv_end.tv_usec,
-                    tv.tv_sec,
+                    tv.tv_sec%60,
                     tv.tv_usec);
 
             pthread_mutex_lock(&mutex);
@@ -710,8 +712,26 @@ void* drawWindow_thread(void *argv) {
                       0,
                       0);
             pthread_mutex_unlock(&mutex);
+            gettimeofday(&tv_end_last, NULL);
+            fprintf(stderr, "TED__TXImage::drawWindow_thread heartbeat draw end "\
+            "at(%d.%d - %d.%d)\n\n",
+                    //"p_dpy=%s, gc=%s, win=%d, pic_src=%d, pic_dst=%d, pix=%d, w=%d, h=%d\n"\
+
+//            pSt_draw->dpy,
+//                    pSt_draw->gc,
+//                    pSt_draw->win,
+//                    pSt_draw->pic_src,
+//                    pSt_draw->pic_dst,
+//                    pSt_draw->pix_dst,
+//                    pSt_draw->w,
+//                    pSt_draw->h,
+                    tv_end_last.tv_sec%60,
+                    tv_end_last.tv_usec,
+                    tv.tv_sec%60,
+                    tv.tv_usec);
+
+            tv = tv_end;
         }
-        tv = tv_end;
     }
 
     return NULL;
