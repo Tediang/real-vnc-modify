@@ -58,6 +58,14 @@ TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
   createXImage();
   getNativePixelFormat(vis, depth);
   colourmap = this;
+    xrformat = XRenderFindVisualFormat(dpy, vis);
+    xform = { {
+                      { XDoubleToFixed(1/w_scale_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
+                      { XDoubleToFixed(0), XDoubleToFixed(1/h_scale_rate), XDoubleToFixed(0) },
+                      { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
+              }
+    };
+
   format.bpp = 0;  // just make it different to any valid format, so that...
   setPF(nativePF); // ...setPF() always works
 
@@ -148,51 +156,60 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
   int y = r.tl.y;
   int w = r.width();
   int h = r.height();
-  fprintf(stderr, "\nTED__TXImage::put --> rect(%d, %d, %d, %d)\n", x, y, w, h);
+
   if (data != (rdr::U8*)xim->data) {
     rdr::U8* ximDataStart = ((rdr::U8*)xim->data + y * xim->bytes_per_line
                              + x * (xim->bits_per_pixel / 8));
     tig->getImage(ximDataStart, r,
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
   }
-  // scale xim to xim_scaled
-//  if(w > 100){
-//    fprintf(stderr, "TED__TXImage::put --> rect(%d, %d: %d, %d)\n", x, y, w, h);
-//  }
+    // origin
+    // XPutImage(dpy, win, gc, xim, x, y, x ,y, w, h);
 
-  static int mod = 60;
-  static int draw = 1;
-  static int k = 1;
-  struct timeval tv;
-  struct timezone tz;
-  gettimeofday(&tv, &tz);
- // fprintf(stderr, "TED__TXImage::scaleXImage begin at(%d.%d)...%d\n", tv.tv_sec%mod, tv.tv_usec, k++);
+    int x_dst = (int)(x * w_scale_rate);
+    int y_dst = (int)(y * h_scale_rate);
+    unsigned int w_dst = (unsigned int)(w * w_scale_rate);
+    unsigned int h_dst = (unsigned int)(h * h_scale_rate);
+    w_dst = w_dst < 1 ? 1 : w_dst;
+    h_dst = h_dst < 1 ? 1 : h_dst;
 
-  int x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, r_w_scaled, r_h_scaled;
+//    fprintf(stderr, "\nTED__TXImage::put --> r(%d, %d, %d, %d)"\
+//    "..r_dst(%d, %d, %d, %d)\n", x, y, w, h, x_dst, y_dst, w_dst, h_dst);
 
-  scaleXImage(win, gc, x, y, x, y, w, h, &x_scaled_src, &y_scaled_src, &x_scaled_dst, &y_scaled_dst, &r_w_scaled, &r_h_scaled);
-//
-//  if ((draw++)%mod == 0)
-//  {
-//      fprintf(stderr, "TED__TXImage::XCopyArea(%d.%d)...%d\n", w_scaled, h_scaled, draw);
-//     // XCopyArea(dpy, pixmap_dst, win, gc, 0, 0, w_scaled, h_scaled, 0, 0);
-//      draw = 1;
-//  }
+    pixmap_src = XCreatePixmap(dpy, win, w, h, xrformat->depth);
+    XPutImage(dpy, pixmap_src, gc, xim, x, y, 0 ,0, w, h);
+    picture_src = XRenderCreatePicture(dpy, pixmap_src, xrformat, 0, NULL);
 
+    pixmap_dst = XCreatePixmap(dpy, win, w_dst, h_dst, xrformat->depth);
+    picture_dst = XRenderCreatePicture(dpy, pixmap_dst, xrformat, 0, NULL);
 
-//    XCopyArea(dpy, pixmap_dst, win, gc, x_scaled_src, y_scaled_src, w_scaled, h_scaled, x_scaled_dst, y_scaled_dst);
+    XRenderSetPictureTransform(dpy, picture_src, &xform);
+    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0);
 
-//    scaleXImageCairo(win, gc, x, y, x, y, w, h);
-  //fprintf(stderr, "TED__TXImage::put --> xim(%d, %d) -- xim_scaled(%d, %d)\n", w, h, w_scaled, h_scaled);
+    XRenderComposite(dpy,
+                     PictOpSrc,
+                     picture_src,
+                     None,
+                     picture_dst,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     w_dst,
+                     h_dst);
 
-//  if (usingShm()) {
-//    XShmPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled, False);
-//  } else {
-//    fprintf(stderr, "TED__TXImage::put --> XPutImage(%d, %d, %d, %d: %d, %d)\n",
-//            x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
-//    XPutImage(dpy, win, gc, xim_scaled, x_scaled_src, y_scaled_src, x_scaled_dst, y_scaled_dst, w_scaled, h_scaled);
-    //XPutImage(dpy, win, gc, xim, x,y,x,y, w,h);
-//  }
+    XCopyArea(dpy,
+              pixmap_dst,
+              win,
+              gc,
+              0,
+              0,
+              w_dst,
+              h_dst,
+              x_dst,
+              y_dst);
 }
 
 void TXImage::setColourMapEntries(int firstColour, int nColours, rdr::U16* rgbs)
@@ -391,32 +408,32 @@ void TXImage::scaleXImage(Window win, GC gc,
                           int x_src, int y_src, int x_dst, int y_dst, int w_src, int h_src,
                           int *x_scaled_src, int *y_scaled_src, int *x_scaled_dst, int *y_scaled_dst, int *w_dst, int *h_dst)
 {
-  if(!inited)
-  {
-    rect_to_wrap = {0};
-    fprintf(stderr, "TED__TXImage::scaleXImage --> init to create pixmap and picture ori(%d, %d) -- scaled(%d, %d)"\
-                        " -- rate(%lf, %lf)\n", width_, height_, w_scaled, h_scaled, w_scale_rate, h_scale_rate);
-    XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
-    pixmap_src = XCreatePixmap(dpy, win, width_, height_, format->depth);
-    picture_src = XRenderCreatePicture(dpy, pixmap_src, format, 0, NULL);
-    pixmap_dst = XCreatePixmap(dpy, win, w_scaled, h_scaled, format->depth);
-    picture_dst = XRenderCreatePicture(dpy, pixmap_dst, format, 0, NULL);
-
-    XTransform xform = { {
-                               { XDoubleToFixed(1/w_scale_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
-                               { XDoubleToFixed(0), XDoubleToFixed(1/h_scale_rate), XDoubleToFixed(0) },
-                               { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
-                       }
-    };
-    XRenderSetPictureTransform(dpy, picture_src, &xform);
-    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0);
-
-    gettimeofday(&tv, NULL);
-    tv_end = {0};
-    inited = true;
-
-
-  }
+//  if(!inited)
+//  {
+//    rect_to_wrap = {0};
+//    fprintf(stderr, "TED__TXImage::scaleXImage --> init to create pixmap and picture ori(%d, %d) -- scaled(%d, %d)"\
+//                        " -- rate(%lf, %lf)\n", width_, height_, w_scaled, h_scaled, w_scale_rate, h_scale_rate);
+//    XRenderPictFormat* format = XRenderFindVisualFormat(dpy, vis);
+//    pixmap_src = XCreatePixmap(dpy, win, width_, height_, format->depth);
+//    picture_src = XRenderCreatePicture(dpy, pixmap_src, format, 0, NULL);
+//    pixmap_dst = XCreatePixmap(dpy, win, w_scaled, h_scaled, format->depth);
+//    picture_dst = XRenderCreatePicture(dpy, pixmap_dst, format, 0, NULL);
+//
+//    XTransform xform = { {
+//                               { XDoubleToFixed(1/w_scale_rate), XDoubleToFixed(0), XDoubleToFixed(0) },
+//                               { XDoubleToFixed(0), XDoubleToFixed(1/h_scale_rate), XDoubleToFixed(0) },
+//                               { XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1) }
+//                       }
+//    };
+//    XRenderSetPictureTransform(dpy, picture_src, &xform);
+//    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0);
+//
+//    gettimeofday(&tv, NULL);
+//    tv_end = {0};
+//    inited = true;
+//
+//
+//  }
     addRectToWrapRect(x_src, y_src, w_src, h_src);
     XPutImage(dpy, pixmap_src, gc, xim, x_src, y_src, x_dst, y_dst, w_src, h_src);
 

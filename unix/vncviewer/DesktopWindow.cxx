@@ -376,10 +376,10 @@ void DesktopWindow::handleEvent(TXWindow* w, XEvent* ev)
   switch (ev->type) {
   case GraphicsExpose:
   case Expose:
-    fprintf(stderr, "TED__DesktopWindow::handleEvent --> case Expose rect(%d, %d, %d, %d)\n",
-            ev->xexpose.x, ev->xexpose.y,
-            ev->xexpose.x + ev->xexpose.width,
-            ev->xexpose.y + ev->xexpose.height);
+//    fprintf(stderr, "TED__DesktopWindow::handleEvent --> case Expose rect(%d, %d, %d, %d)\n",
+//            ev->xexpose.x, ev->xexpose.y,
+//            ev->xexpose.x + ev->xexpose.width,
+//            ev->xexpose.y + ev->xexpose.height);
 
 //
 //    im->put(win(), gc, Rect((int)(ev->xexpose.x * w_scale_rate),

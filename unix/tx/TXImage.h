@@ -100,8 +100,8 @@ private:
     WrapRect getRectToScale();
     WrapRect getScaledRect(WrapRect *ptr_rect) const;
 
-
-
+    XTransform xform;
+    XRenderPictFormat* xrformat;
     XImage* xim;
     Pixmap pixmap_src, pixmap_dst;
     Picture picture_src, picture_dst;
