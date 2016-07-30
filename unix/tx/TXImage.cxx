@@ -36,6 +36,8 @@
 #include "TXImage.h"
 #include <cairo.h>
 #include <cairo-xlib.h>
+#include <zconf.h>
+
 using namespace rfb;
 
 static rfb::LogWriter vlog("TXImage");
@@ -173,18 +175,40 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
     w_dst = w_dst < 1 ? 1 : w_dst;
     h_dst = h_dst < 1 ? 1 : h_dst;
 
-//    fprintf(stderr, "\nTED__TXImage::put --> r(%d, %d, %d, %d)"\
+//    fprintf(stderr, "\nTED__TXImage::put --> before...r(%d, %d, %d, %d)"\
 //    "..r_dst(%d, %d, %d, %d)\n", x, y, w, h, x_dst, y_dst, w_dst, h_dst);
 
-    pixmap_src = XCreatePixmap(dpy, win, w, h, xrformat->depth);
-    XPutImage(dpy, pixmap_src, gc, xim, x, y, 0 ,0, w, h);
+    int extendXY = 5;
+    int extendWH = 2 * extendXY;
+    int x_ex = x - extendXY < 0 ? 0 : x - extendXY;
+    int y_ex = y - extendXY < 0 ? 0 : y - extendXY;
+    int w_ex = w + extendWH + x > 1920 ? 1920 - x : w + extendWH;
+    int h_ex = h + extendWH + y > 1080 ? 1080 - y : h + extendWH;
+
+    int x_ex_dst = (int)(x_ex * w_scale_rate);
+    int y_ex_dst = (int)(y_ex * h_scale_rate);
+
+    unsigned int w_ex_dst = (unsigned int)(w_ex * w_scale_rate);
+    unsigned int h_ex_dst = (unsigned int)(h_ex * h_scale_rate);
+    w_ex_dst = w_ex_dst < 1 ? 1 : w_ex_dst;
+    h_ex_dst = h_ex_dst < 1 ? 1 : h_ex_dst;
+
+    fprintf(stderr, "TED__TXImage::put --> r_______(%d, %d, %d, %d)\n", x, y, w, h);
+    fprintf(stderr, "TED__TXImage::put --> r_____ex(%d, %d, %d, %d)\n", x_ex, y_ex, w_ex, h_ex);
+    fprintf(stderr, "TED__TXImage::put --> r____dst(%d, %d, %d, %d)\n", x_dst, y_dst, w_dst, h_dst);
+    fprintf(stderr, "TED__TXImage::put --> r_ex_dst(%d, %d, %d, %d)\n\n", x_ex_dst, y_ex_dst, w_ex_dst, h_ex_dst);
+
+    usleep(1000 * 150);
+
+    pixmap_src = XCreatePixmap(dpy, win, w_ex, h_ex, xrformat->depth);
+    XPutImage(dpy, pixmap_src, gc, xim, x_ex, y_ex, 0 ,0, w_ex, h_ex);
     picture_src = XRenderCreatePicture(dpy, pixmap_src, xrformat, 0, NULL);
 
-    pixmap_dst = XCreatePixmap(dpy, win, w_dst, h_dst, xrformat->depth);
+    pixmap_dst = XCreatePixmap(dpy, win, w_ex_dst, h_ex_dst, xrformat->depth);
     picture_dst = XRenderCreatePicture(dpy, pixmap_dst, xrformat, 0, NULL);
 
     XRenderSetPictureTransform(dpy, picture_src, &xform);
-    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0);
+    XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest FilterBest
 
     XRenderComposite(dpy,
                      PictOpSrc,
@@ -197,19 +221,19 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
                      0,
                      0,
                      0,
-                     w_dst,
-                     h_dst);
+                     w_ex_dst,
+                     h_ex_dst);
 
     XCopyArea(dpy,
               pixmap_dst,
               win,
               gc,
-              0,
-              0,
+              (int)(extendXY * 0),
+              (int)(extendXY * 0),
               w_dst,
               h_dst,
-              x_dst,
-              y_dst);
+              x_ex_dst,
+              y_ex_dst);
 }
 
 void TXImage::setColourMapEntries(int firstColour, int nColours, rdr::U16* rgbs)
