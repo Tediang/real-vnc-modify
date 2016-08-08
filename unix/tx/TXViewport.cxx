@@ -27,13 +27,9 @@ TXViewport::TXViewport(Display* dpy_, int w, int h, TXWindow* parent_)
     vScrollbar(0), scrollbarSize(15), xOff(0), yOff(0), bumpScrollTimer(this),
     bumpScroll(false), needScrollbars(false), bumpScrollX(0), bumpScrollY(0)
 {
-  clipper = new TXWindow(dpy, width()-scrollbarSize, height()-scrollbarSize,
+  clipper = new TXWindow(dpy, width(), height(),
                          this);
   clipper->setBg(black);
-  hScrollbar = new TXScrollbar(dpy, width()-scrollbarSize, scrollbarSize,
-                               false, this, this);
-  vScrollbar = new TXScrollbar(dpy, scrollbarSize, height()-scrollbarSize,
-                               true, this, this);
 }
 
 TXViewport::~TXViewport()
@@ -117,29 +113,7 @@ bool TXViewport::handleTimeout(rfb::Timer* timer) {
 
 void TXViewport::resizeNotify()
 {
-  needScrollbars = (!bumpScroll &&
-                    (width() < child->width() || height() < child->height()) &&
-                    (width() > scrollbarSize && height() > scrollbarSize));
-  if (needScrollbars) {
-    clipper->resize(width()-scrollbarSize, height()-scrollbarSize);
-    hScrollbar->map();
-    vScrollbar->map();
-  } else {
-    clipper->resize(width(), height());
-    hScrollbar->unmap();
-    vScrollbar->unmap();
-  }
 
-  setOffset(xOff, yOff);
-
-  if (needScrollbars) {
-    hScrollbar->move(0, height()-scrollbarSize);
-    hScrollbar->resize(width()-scrollbarSize, scrollbarSize);
-    hScrollbar->set(child->width(), -xOff, width()-scrollbarSize);
-    vScrollbar->move(width()-scrollbarSize, 0);
-    vScrollbar->resize(scrollbarSize, height()-scrollbarSize);
-    vScrollbar->set(child->height(), -yOff, height()-scrollbarSize);
-  }
 }
 
 void TXViewport::scrollbarPos(int x, int y, TXScrollbar* sb)

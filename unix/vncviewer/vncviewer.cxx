@@ -39,6 +39,12 @@
 
 rfb::LogWriter vlog("main");
 
+//int w_scaled = 1024;
+//int h_scaled = 768;
+
+int w_scaled = 800;
+int h_scaled = 600;
+
 using namespace network;
 using namespace rfb;
 

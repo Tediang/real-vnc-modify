@@ -39,6 +39,8 @@
 #include "parameters.h"
 
 using namespace rfb;
+extern int w_scaled;
+extern int h_scaled;
 
 static rfb::LogWriter vlog("CConn");
 
@@ -556,7 +558,7 @@ void CConn::getOptions() {
 void CConn::recreateViewport()
 {
   TXViewport* oldViewport = viewport;
-  viewport = new TXViewport(dpy, cp.width, cp.height);
+  viewport = new TXViewport(dpy,w_scaled, h_scaled);
   desktop->setViewport(viewport);
   CharArray windowNameStr(windowName.getData());
   if (!windowNameStr.buf[0]) {
@@ -586,23 +588,13 @@ void CConn::recreateViewport()
 
 void CConn::reconfigureViewport()
 {
-  viewport->setMaxSize(cp.width, cp.height);
+  viewport->setMaxSize( w_scaled, h_scaled);
   if (fullScreen) {
     viewport->resize(DisplayWidth(dpy,DefaultScreen(dpy)),
                      DisplayHeight(dpy,DefaultScreen(dpy)));
   } else {
-    int w = cp.width;
-    int h = cp.height;
-    if (w + wmDecorationWidth >= DisplayWidth(dpy,DefaultScreen(dpy)))
-      w = DisplayWidth(dpy,DefaultScreen(dpy)) - wmDecorationWidth;
-    if (h + wmDecorationHeight >= DisplayHeight(dpy,DefaultScreen(dpy)))
-      h = DisplayHeight(dpy,DefaultScreen(dpy)) - wmDecorationHeight;
-
-    int x = (DisplayWidth(dpy,DefaultScreen(dpy)) - w - wmDecorationWidth) / 2;
-    int y = (DisplayHeight(dpy,DefaultScreen(dpy)) - h - wmDecorationHeight)/2;
-
     CharArray geometryStr(geometry.getData());
-    viewport->setGeometry(geometryStr.buf, x, y, w, h);
+    viewport->setGeometry(geometryStr.buf, 0, 0, w_scaled, h_scaled);
   }
 }
 

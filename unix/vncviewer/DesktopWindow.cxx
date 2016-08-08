@@ -59,13 +59,15 @@ static rdr::U8 reverseBits[] = {
 };
 
 using namespace rfb;
+extern int w_scaled;
+extern int h_scaled;
 
 static rfb::LogWriter vlog("DesktopWindow");
 
 DesktopWindow::DesktopWindow(Display* dpy, int w, int h,
                              const rfb::PixelFormat& serverPF,
                              CConn* cc_, TXWindow* parent)
-  : TXWindow(dpy, w, h, parent), cc(cc_), im(0),
+  : TXWindow(dpy, w_scaled, h_scaled, parent), cc(cc_), im(0),
     cursorVisible(false), cursorAvailable(false), currentSelectionTime(0),
     newSelection(0), gettingInitialSelectionTime(true),
     newServerCutText(false), serverCutText_(0),
@@ -80,7 +82,7 @@ DesktopWindow::DesktopWindow(Display* dpy, int w, int h,
                EnterWindowMask | LeaveWindowMask);
   createXCursors();
   XDefineCursor(dpy, win(), dotCursor);
-  im = new TXImage(dpy, width(), height());
+  im = new TXImage(dpy, w, h);
   if (!serverPF.trueColour)
     im->setPF(serverPF);
   XConvertSelection(dpy, sendPrimary ? XA_PRIMARY : xaCLIPBOARD, xaTIMESTAMP,
@@ -306,7 +308,7 @@ void DesktopWindow::invertRect(const Rect& r)
 void DesktopWindow::resize(int w, int h)
 {
   hideLocalCursor();
-  TXWindow::resize(w, h);
+  TXWindow::resize(w_scaled, h_scaled);
   im->resize(w, h);
 }
 
