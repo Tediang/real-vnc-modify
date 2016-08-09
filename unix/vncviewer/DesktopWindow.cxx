@@ -571,3 +571,7 @@ void DesktopWindow::selectionNotify(XSelectionEvent* ev, Atom type, int format,
     }
   }
 }
+
+TXImage* DesktopWindow::getIm(){
+    return im;
+}

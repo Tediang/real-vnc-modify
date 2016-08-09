@@ -91,6 +91,7 @@ public:
   virtual void selectionNotify(XSelectionEvent* ev, Atom type, int format,
                                int nitems, void* data);
   virtual void handleEvent(TXWindow* w, XEvent* ev);
+  TXImage* getIm();
 
 private:
 

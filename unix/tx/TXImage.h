@@ -39,6 +39,8 @@
 #include <rfb/ColourMap.h>
 #include <rfb/ColourCube.h>
 #include <X11/extensions/XShm.h>
+#include <X11/extensions/Xrender.h>
+
 
 namespace rfb { class TransImageGetter; }
 
@@ -66,7 +68,8 @@ public:
   // width(), height(), getPF() etc are inherited from PixelBuffer
   virtual void setPF(const rfb::PixelFormat& pf);
   virtual int getStride() const;
-
+  void draw();
+  bool win_gc_inited = false;
 private:
 
   // ColourMap method
@@ -75,6 +78,15 @@ private:
   void createXImage();
   void destroyXImage();
   void getNativePixelFormat(Visual* vis, int depth);
+
+  XRenderPictFormat *xrformat;
+  XTransform xform;
+  Pixmap pixmap_src, pixmap_dst;
+  Picture picture_src, picture_dst;
+  Window win_draw;
+  GC gc_draw;
+  bool inited;
+  int w_dst, h_dst;
 
   XImage* xim;
   Display* dpy;

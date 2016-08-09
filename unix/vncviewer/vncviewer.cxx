@@ -250,6 +250,7 @@ int main(int argc, char** argv)
 
     while (true) {
       cc.getInStream()->check(1);
+      fprintf(stderr, "TED__check done !!! go to process !!!!!!!!!!!!!!!!!!!!!\n\n\n");
       cc.processMsg();
     }
 

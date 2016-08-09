@@ -96,6 +96,8 @@ private:
   void checkEncodings();
   void requestNewUpdate();
 
+  int expiry_draw = 10 * 1000; // unit: ms
+  struct timeval tv_draw_last, tv_draw;
   Display* dpy;
   int argc;
   char** argv;

@@ -31,10 +31,14 @@
 #include <rfb/TransImageGetter.h>
 #include <rfb/Exception.h>
 #include <rfb/LogWriter.h>
+#include <X11/extensions/Xrender.h>
+#include <X11/Xos.h>
 #include "TXWindow.h"
 #include "TXImage.h"
 
 using namespace rfb;
+extern int w_scaled;
+extern int h_scaled;
 
 static rfb::LogWriter vlog("TXImage");
 
@@ -56,6 +60,7 @@ TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
   colourmap = this;
   format.bpp = 0;  // just make it different to any valid format, so that...
   setPF(nativePF); // ...setPF() always works
+  inited = false;
 }
 
 TXImage::~TXImage()
@@ -129,6 +134,10 @@ int TXImage::getStride() const
 
 void TXImage::put(Window win, GC gc, const rfb::Rect& r)
 {
+//  fprintf(stderr, "TED__put....\n");
+  win_draw = win;
+  gc_draw = gc;
+  win_gc_inited = true;
   if (r.is_empty()) return;
   int x = r.tl.x;
   int y = r.tl.y;
@@ -139,11 +148,6 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
                              + x * (xim->bits_per_pixel / 8));
     tig->getImage(ximDataStart, r,
                   xim->bytes_per_line / (xim->bits_per_pixel / 8));
-  }
-  if (usingShm()) {
-    XShmPutImage(dpy, win, gc, xim, x, y, x, y, w, h, False);
-  } else {
-    XPutImage(dpy, win, gc, xim, x, y, x, y, w, h);
   }
 }
 
@@ -337,4 +341,80 @@ void TXImage::getNativePixelFormat(Visual* vis, int depth)
       }
     }
   }
+}
+
+void TXImage::draw(){
+    struct timeval tmp;
+
+    gettimeofday(&tmp, 0);
+    fprintf(stderr, "TED__draw...begin at...(%2d.%3d)\n", tmp.tv_sec%60, tmp.tv_usec/1000);
+    if(!inited) {
+
+        w_dst = w_scaled;
+        h_dst = h_scaled;
+
+        double w_scale_rate = (double) w_dst / width_;
+        double h_scale_rate = (double) h_dst / height_;
+//
+//        double w_scale_rate = (double) 1;
+//        double h_scale_rate = (double) 1;
+
+        xrformat = XRenderFindVisualFormat(dpy, vis);
+        xform = {{
+                         {XDoubleToFixed(1 / w_scale_rate), XDoubleToFixed(0), XDoubleToFixed(0)},
+                         {XDoubleToFixed(0), XDoubleToFixed(1 / h_scale_rate), XDoubleToFixed(0)},
+                         {XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1)}
+                 }
+        };
+
+        pixmap_src = XCreatePixmap(dpy, win_draw, width_, height_, xrformat->depth);
+        XPutImage(dpy, pixmap_src, gc_draw, xim, 0, 0, 0, 0, width_, height_);
+        picture_src = XRenderCreatePicture(dpy, pixmap_src, xrformat, 0, NULL);
+
+        pixmap_dst = XCreatePixmap(dpy, win_draw, w_dst, h_dst, xrformat->depth);
+        picture_dst = XRenderCreatePicture(dpy, pixmap_dst, xrformat, 0, NULL);
+
+        XRenderSetPictureTransform(dpy, picture_src, &xform);
+        XRenderSetPictureFilter(dpy, picture_src, FilterBest, NULL, 0); //FilterNearest FilterBest
+        fprintf(stderr, "TED__inited....\n");
+        inited = true;
+    }
+    else{
+        gettimeofday(&tmp, 0);
+        fprintf(stderr, "TED__draw...gona putXim at...(%2d.%3d)\n", tmp.tv_sec%60, tmp.tv_usec/1000);
+
+        XPutImage(dpy, pixmap_src, gc_draw, xim, 0, 0, 0, 0, width_, height_);
+
+        gettimeofday(&tmp, 0);
+        fprintf(stderr, "TED__draw...putXim finish ..gona composite at...(%2d.%3d)\n", tmp.tv_sec%60, tmp.tv_usec/1000);
+    }
+
+    XRenderComposite(dpy,
+                     PictOpSrc,
+                     picture_src,
+                     None,
+                     picture_dst,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     w_dst,
+                     h_dst);
+    gettimeofday(&tmp, 0);
+    fprintf(stderr, "TED__draw...putXim finish ..composite finish...  gona copy at...(%2d.%3d)\n", tmp.tv_sec%60, tmp.tv_usec/1000);
+
+    XCopyArea(dpy,
+              pixmap_dst,
+              win_draw,
+              gc_draw,
+              0,
+              0,
+              w_dst,
+              h_dst,
+              0,
+              0);
+    gettimeofday(&tmp, 0);
+    fprintf(stderr, "TED__draw...putXim finish ..copy finish at...(%2d.%3d)\n", tmp.tv_sec%60, tmp.tv_usec/1000);
 }

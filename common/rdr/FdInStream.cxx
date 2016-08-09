@@ -108,6 +108,7 @@ void FdInStream::readBytes(void* data, int length)
   ptr += n;
 
   while (length > 0) {
+     // fprintf(stderr, "TED__readBytes while !!!!!\n");
     n = readWithTimeoutOrCallback(dataPtr, length);
     dataPtr += n;
     length -= n;
@@ -129,6 +130,7 @@ int FdInStream::overrun(int itemSize, int nItems, bool wait)
   ptr = start;
 
   while (end < start + itemSize) {
+  //fprintf(stderr, "TED__overrun while !!!!!\n");
     int n = readWithTimeoutOrCallback((U8*)end, start + bufSize - end, wait);
     if (n == 0) return 0;
     end += n;
@@ -184,6 +186,7 @@ static void gettimeofday(struct timeval* tv, void*)
 
 int FdInStream::readWithTimeoutOrCallback(void* buf, int len, bool wait)
 {
+    //fprintf(stderr, "TED__readWithTimeoutOrCallback BEGIN...\n");
   struct timeval before, after;
   if (timing)
     gettimeofday(&before, 0);
@@ -204,10 +207,12 @@ int FdInStream::readWithTimeoutOrCallback(void* buf, int len, bool wait)
         tvp = 0;
       }
 
+
       FD_ZERO(&fds);
       FD_SET(fd, &fds);
       n = select(fd+1, &fds, 0, 0, tvp);
     } while (n < 0 && errno == EINTR);
+    //if (n == 0) fprintf(stderr, "TED__n < 0 !!!!! go to block callback...timeousms(%d)\n\n", timeoutms);
 
     if (n > 0) break;
     if (n < 0) throw SystemException("select",errno);
@@ -216,6 +221,9 @@ int FdInStream::readWithTimeoutOrCallback(void* buf, int len, bool wait)
 
     blockCallback->blockCallback();
   }
+
+   // fprintf(stderr, "TED__readWithTimeoutOrCallback select...%d...go to read data\n", n);
+
 
   do {
     n = ::read(fd, buf, len);

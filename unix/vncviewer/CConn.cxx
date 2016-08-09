@@ -104,6 +104,10 @@ CConn::CConn(Display* dpy_, int argc_, char** argv_, network::Socket* sock_,
   setServerName(sock->getPeerEndpoint());
   setStreams(&sock->inStream(), &sock->outStream());
   initialiseProtocol();
+
+  tv_draw = {0};
+  gettimeofday(&tv_draw_last, 0);
+  fprintf(stderr, "TED__last draw at......(%d.%d)\n", tv_draw_last.tv_sec, tv_draw_last.tv_usec);
 }
 
 CConn::~CConn() {
@@ -160,6 +164,8 @@ void CConn::handleEvent(TXWindow* w, XEvent* ev)
 
 void CConn::blockCallback() {
   fd_set rfds;
+  struct timeval tmp;
+    static int c = 1;
   do {
     struct timeval tv;
     struct timeval* tvp = 0;
@@ -181,13 +187,30 @@ void CConn::blockCallback() {
       tvp = &tv;
     }
 
+    gettimeofday(&tv_draw, 0);
+    fprintf(stderr, "TED__now...........(%d.%d)\n\n", tv_draw.tv_sec%60, tv_draw.tv_usec/1000);
+
+    if(tv_draw.tv_sec > tv_draw_last.tv_sec
+    || tv_draw.tv_usec - tv_draw_last.tv_usec > expiry_draw
+    || tv_draw_last.tv_usec - tv_draw.tv_usec > expiry_draw){
+        fprintf(stderr, "TED__now...(%2d.%3d) -->draw...%d\n", tv_draw.tv_sec%60, tv_draw.tv_usec/1000, c++);
+        if(desktop && desktop->getIm()->win_gc_inited) desktop->getIm()->draw();
+        tv_draw_last = tv_draw;
+        gettimeofday(&tmp, 0);
+        fprintf(stderr, "TED__now...(%2d.%3d) -->draw...finish...\n", tmp.tv_sec%60, tmp.tv_usec/1000);
+    }
+
+
     // Wait for X events, VNC traffic, or the next timer expiry
     FD_ZERO(&rfds);
     FD_SET(ConnectionNumber(dpy), &rfds);
     FD_SET(sock->getFd(), &rfds);
     int n = select(FD_SETSIZE, &rfds, 0, 0, tvp);
+     // fprintf(stderr, "TED__.....select...n(%d)\n", n);
     if (n < 0) throw rdr::SystemException("select",errno);
   } while (!(FD_ISSET(sock->getFd(), &rfds)));
+   // fprintf(stderr, "TED__.........while finish!!!!!...%d\n", c++);
+
 }
 
 
