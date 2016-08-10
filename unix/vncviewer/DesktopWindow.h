@@ -28,8 +28,12 @@
 #include "TXWindow.h"
 #include "TXViewport.h"
 #include "TXImage.h"
+#include <stdio.h>
 
 class CConn;
+extern double w_scale_rate;
+extern double h_scale_rate;
+extern Pixmap pixmap_src, pixmap_dst;
 
 class DesktopWindow : public TXWindow, public TXEventHandler,
                       public rfb::Timer::Callback {
@@ -78,7 +82,7 @@ public:
     if (im->usingShm())
       XSync(dpy, False);
     im->copyRect(r, rfb::Point(r.tl.x-srcX, r.tl.y-srcY));
-    XCopyArea(dpy, win(), win(), gc, srcX, srcY,
+    XCopyArea(dpy, pixmap_src, pixmap_src, gc, srcX, srcY,
               r.width(), r.height(), r.tl.x, r.tl.y);
     showLocalCursor();
   }
