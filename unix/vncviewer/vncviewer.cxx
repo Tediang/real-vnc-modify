@@ -45,6 +45,9 @@ rfb::LogWriter vlog("main");
 int w_scaled = 800;
 int h_scaled = 600;
 
+double w_scale_rate = w_scaled/1680.0;
+double h_scale_rate = h_scaled/1050.0;
+
 using namespace network;
 using namespace rfb;
 
@@ -250,7 +253,6 @@ int main(int argc, char** argv)
 
     while (true) {
       cc.getInStream()->check(1);
-      fprintf(stderr, "TED__check done !!! go to process !!!!!!!!!!!!!!!!!!!!!\n\n\n");
       cc.processMsg();
     }
 

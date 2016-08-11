@@ -57,6 +57,9 @@ FdInStream::FdInStream(int fd_, int timeoutms_, int bufSize_,
     bufSize(bufSize_ ? bufSize_ : DEFAULT_BUF_SIZE), offset(0)
 {
   ptr = end = start = new U8[bufSize];
+    expiry_draw = 100 * 1000;
+    gettimeofday(&tv_draw_last, 0);
+    tv_draw = {0};
 }
 
 FdInStream::FdInStream(int fd_, FdInStreamBlockCallback* blockCallback_,
@@ -207,6 +210,19 @@ int FdInStream::readWithTimeoutOrCallback(void* buf, int len, bool wait)
         tvp = 0;
       }
 
+        tv.tv_sec = 0;
+        tv.tv_usec = 100 * 1000;
+        tvp = &tv;
+
+    gettimeofday(&tv_draw, 0);
+     //   fprintf(stderr, "TED__now...(%2d.%3d) -->FdInStream-->now...\n", tv_draw.tv_sec%60, tv_draw.tv_usec/1000);
+    if(tv_draw.tv_sec > tv_draw_last.tv_sec
+       || tv_draw.tv_usec - tv_draw_last.tv_usec > expiry_draw
+       || tv_draw_last.tv_usec - tv_draw.tv_usec > expiry_draw){
+        fprintf(stderr, "TED__now...(%2d.%3d) -->FdInStream-->draw...\n", tv_draw.tv_sec%60, tv_draw.tv_usec/1000);
+        blockCallback->blockCallback_draw();
+        tv_draw_last = tv_draw;
+    }
 
       FD_ZERO(&fds);
       FD_SET(fd, &fds);

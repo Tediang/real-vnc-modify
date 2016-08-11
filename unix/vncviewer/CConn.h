@@ -54,6 +54,7 @@ public:
   // TXDeleteWindowCallback methods
   void deleteWindow(TXWindow* w);
 
+    void blockCallback_draw();
   // FdInStreamBlockCallback methods
   void blockCallback();
 
@@ -96,8 +97,8 @@ private:
   void checkEncodings();
   void requestNewUpdate();
 
-  int expiry_draw = 10 * 1000; // unit: ms
-  struct timeval tv_draw_last, tv_draw;
+  int expiry_draw = 100 * 1000; // unit: ms
+  struct timeval tv_draw_last, tv_draw, tv_tmp;
   Display* dpy;
   int argc;
   char** argv;

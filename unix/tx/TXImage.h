@@ -81,7 +81,6 @@ private:
 
   XRenderPictFormat *xrformat;
   XTransform xform;
-  Pixmap pixmap_src, pixmap_dst;
   Picture picture_src, picture_dst;
   Window win_draw;
   GC gc_draw;

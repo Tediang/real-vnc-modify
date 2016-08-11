@@ -24,12 +24,14 @@
 #define __RDR_FDINSTREAM_H__
 
 #include <rdr/InStream.h>
+#include <bits/time.h>
 
 namespace rdr {
 
   class FdInStreamBlockCallback {
   public:
     virtual void blockCallback() = 0;
+    virtual void blockCallback_draw() = 0;
   };
 
   class FdInStream : public InStream {
@@ -57,7 +59,8 @@ namespace rdr {
 
   private:
     int readWithTimeoutOrCallback(void* buf, int len, bool wait=true);
-
+      struct timeval tv_draw_last, tv_draw;
+      int expiry_draw = 100 * 1000; // unit: ms
     int fd;
     bool closeWhenDone;
     int timeoutms;
