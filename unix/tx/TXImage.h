@@ -70,6 +70,7 @@ public:
   virtual int getStride() const;
   void draw();
   bool win_gc_inited = false;
+  void setWindowSize(int w, int h);
 private:
 
   // ColourMap method

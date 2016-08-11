@@ -64,10 +64,10 @@ extern int h_scaled;
 
 static rfb::LogWriter vlog("DesktopWindow");
 
-DesktopWindow::DesktopWindow(Display* dpy, int w, int h,
+DesktopWindow::DesktopWindow(Display* dpy, int w, int h,int win_w, int win_h,
                              const rfb::PixelFormat& serverPF,
                              CConn* cc_, TXWindow* parent)
-  : TXWindow(dpy, w_scaled, h_scaled, parent), cc(cc_), im(0),
+  : TXWindow(dpy, win_w, win_h, parent), cc(cc_), im(0), window_width(win_w), window_height(win_h),
     cursorVisible(false), cursorAvailable(false), currentSelectionTime(0),
     newSelection(0), gettingInitialSelectionTime(true),
     newServerCutText(false), serverCutText_(0),
@@ -83,6 +83,7 @@ DesktopWindow::DesktopWindow(Display* dpy, int w, int h,
   createXCursors();
   XDefineCursor(dpy, win(), dotCursor);
   im = new TXImage(dpy, w, h);
+  im->setWindowSize(win_w, win_h);
   if (!serverPF.trueColour)
     im->setPF(serverPF);
   XConvertSelection(dpy, sendPrimary ? XA_PRIMARY : xaCLIPBOARD, xaTIMESTAMP,
@@ -308,7 +309,7 @@ void DesktopWindow::invertRect(const Rect& r)
 void DesktopWindow::resize(int w, int h)
 {
   hideLocalCursor();
-  TXWindow::resize(w_scaled, h_scaled);
+  TXWindow::resize(window_width, window_height);
   im->resize(w, h);
 }
 

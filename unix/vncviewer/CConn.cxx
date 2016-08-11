@@ -270,7 +270,9 @@ CSecurity* CConn::getCSecurity(int secType) {
 void CConn::serverInit() {
   CConnection::serverInit();
   serverPF = cp.pf();
-  desktop = new DesktopWindow(dpy, cp.width, cp.height, serverPF, this);
+  desktop = new DesktopWindow(dpy, cp.width, cp.height,
+                                DisplayWidth(dpy,DefaultScreen(dpy)), DisplayHeight(dpy,DefaultScreen(dpy)),
+                                serverPF, this);
   desktopEventHandler = desktop->setEventHandler(this);
   desktop->addEventMask(KeyPressMask | KeyReleaseMask);
   fullColourPF = desktop->getPF();
@@ -587,8 +589,12 @@ void CConn::getOptions() {
 void CConn::recreateViewport()
 {
   TXViewport* oldViewport = viewport;
-  viewport = new TXViewport(dpy,w_scaled, h_scaled);
+  int w, h;
+  w = fullScreen ? DisplayWidth(dpy,DefaultScreen(dpy)) : w_scaled;
+  h = fullScreen ? DisplayHeight(dpy,DefaultScreen(dpy)) : h_scaled;
+  viewport = new TXViewport(dpy,w, h);
   desktop->setViewport(viewport);
+  desktop->getIm()->setWindowSize(w, h);
   CharArray windowNameStr(windowName.getData());
   if (!windowNameStr.buf[0]) {
     windowNameStr.replaceBuf(new char[256]);
@@ -617,7 +623,7 @@ void CConn::recreateViewport()
 
 void CConn::reconfigureViewport()
 {
-  viewport->setMaxSize( w_scaled, h_scaled);
+  viewport->setMaxSize(DisplayWidth(dpy,DefaultScreen(dpy)), DisplayHeight(dpy,DefaultScreen(dpy)));
   if (fullScreen) {
     viewport->resize(DisplayWidth(dpy,DefaultScreen(dpy)),
                      DisplayHeight(dpy,DefaultScreen(dpy)));

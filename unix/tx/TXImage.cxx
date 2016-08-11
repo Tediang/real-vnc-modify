@@ -153,9 +153,6 @@ void TXImage::put(Window win, GC gc, const rfb::Rect& r)
 
     if(!inited){
 
-        w_dst = w_scaled;
-        h_dst = h_scaled;
-
         double w_scale_rate = (double) w_dst / width_;
         double h_scale_rate = (double) h_dst / height_;
 
@@ -399,4 +396,10 @@ void TXImage::draw(){
               h_dst,
               0,
               0);
+}
+
+void TXImage::setWindowSize(int w, int h){
+    w_dst = w;
+    h_dst = h;
+    inited = false;
 }

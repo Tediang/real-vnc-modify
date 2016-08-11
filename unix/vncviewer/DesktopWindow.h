@@ -31,15 +31,13 @@
 #include <stdio.h>
 
 class CConn;
-extern double w_scale_rate;
-extern double h_scale_rate;
 extern Pixmap pixmap_src, pixmap_dst;
 
 class DesktopWindow : public TXWindow, public TXEventHandler,
                       public rfb::Timer::Callback {
 public:
 
-  DesktopWindow(Display* dpy, int w, int h,
+  DesktopWindow(Display* dpy, int w, int h, int win_w, int win_h,
                 const rfb::PixelFormat& serverPF, CConn* cc_,
                 TXWindow* parent=0);
   ~DesktopWindow();
@@ -109,6 +107,8 @@ private:
   TXImage* im;
   GC gc;
   ::Cursor dotCursor, noCursor, localXCursor;
+  int window_width;
+  int window_height;
 
   rfb::Cursor cursor;
   bool cursorVisible;     // Is cursor currently rendered?
