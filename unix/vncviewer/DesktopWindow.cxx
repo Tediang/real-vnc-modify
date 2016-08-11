@@ -357,12 +357,16 @@ void DesktopWindow::handlePointerEvent(const Point& pos, int buttonMask)
 // handleXEvent() handles the various X events on the window
 void DesktopWindow::handleEvent(TXWindow* w, XEvent* ev)
 {
+    double w_reverse_scaled = (double)im->width()/viewport->width();
+    double h_reverse_scaled = (double)im->height()/viewport->height();
   switch (ev->type) {
   case GraphicsExpose:
   case Expose:
-    im->put(win(), gc, Rect(ev->xexpose.x, ev->xexpose.y,
-                            ev->xexpose.x + ev->xexpose.width,
-                            ev->xexpose.y + ev->xexpose.height));
+    im->put(win(), gc, Rect((int)(ev->xexpose.x * w_reverse_scaled),
+                            (int)(ev->xexpose.y * h_reverse_scaled),
+                            (int)((ev->xexpose.x + ev->xexpose.width) * w_reverse_scaled),
+                            (int)((ev->xexpose.y + ev->xexpose.height) * h_reverse_scaled))
+                            );
     break;
 
   case MotionNotify:
