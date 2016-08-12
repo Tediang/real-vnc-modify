@@ -98,6 +98,9 @@ BoolParameter listenMode("listen", "Listen for connections from VNC servers",
 StringParameter geometry("geometry", "X geometry specification", "");
 StringParameter displayname("display", "The X display", "");
 
+IntParameter viewerWidth("viewerWidth", "Width of VNC Viewer Window", 1024);
+IntParameter viewerHeight("viewerHeight", "Height of VNC Viewer Window", 768);
+
 char aboutText[256];
 char* programName;
 extern char buildtime[];
@@ -197,6 +200,9 @@ int main(int argc, char** argv)
       usage();
     vncServerName = argv[i];
   }
+
+  w_scaled = viewerWidth;
+  h_scaled = viewerHeight;
 
   // Create .vnc in the user's home directory if it doesn't already exist
   char* homeDir = getenv("HOME");
