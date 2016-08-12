@@ -75,7 +75,7 @@ private:
 
   // ColourMap method
   virtual void lookup(int index, int* r, int* g, int* b);
-
+  void cleanDrawResource();
   void createXImage();
   void destroyXImage();
   void getNativePixelFormat(Visual* vis, int depth);

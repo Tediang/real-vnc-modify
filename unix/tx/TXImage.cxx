@@ -61,13 +61,19 @@ TXImage::TXImage(Display* d, int width, int height, Visual* vis_, int depth_)
   colourmap = this;
   format.bpp = 0;  // just make it different to any valid format, so that...
   setPF(nativePF); // ...setPF() always works
+
   inited = false;
+  picture_src = 0;
+  picture_dst = 0;
+  pixmap_src = 0;
+  pixmap_dst = 0;
 }
 
 TXImage::~TXImage()
 {
   if (data != (rdr::U8*)xim->data) delete [] data;
   destroyXImage();
+  cleanDrawResource();
   delete tig;
   delete cube;
 }
@@ -372,6 +378,10 @@ void TXImage::getNativePixelFormat(Visual* vis, int depth)
 }
 
 void TXImage::draw(){
+    if(!inited){
+        return;
+    }
+
     XRenderComposite(dpy,
                      PictOpSrc,
                      picture_src,
@@ -402,4 +412,27 @@ void TXImage::setWindowSize(int w, int h){
     w_dst = w;
     h_dst = h;
     inited = false;
+    cleanDrawResource();
+}
+
+void TXImage::cleanDrawResource(){
+    if(picture_src){
+        XRenderFreePicture(dpy, picture_src);
+        picture_src = 0;
+    }
+
+    if(picture_dst){
+        XRenderFreePicture(dpy, picture_dst);
+        picture_dst = 0;
+    }
+
+    if(pixmap_src){
+        XFreePixmap(dpy, pixmap_src);
+        pixmap_src = 0;
+    }
+
+    if(pixmap_dst){
+        XFreePixmap(dpy, pixmap_dst);
+        pixmap_dst = 0;
+    }
 }
